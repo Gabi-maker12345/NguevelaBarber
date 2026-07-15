@@ -2,13 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Service;
 use Illuminate\Http\Request;
 
 class ServiceController extends Controller
 {
     public function index()
     {
-        $services = \App\Models\Service::all();
+        $services = Service::all();
+
         return view('services.index', compact('services'));
     }
 
@@ -17,41 +19,44 @@ class ServiceController extends Controller
         return view('services.create');
     }
 
-    public function store(\Illuminate\Http\Request $request)
+    public function store(Request $request)
     {
         $data = $request->validate([
             'name' => 'required|string|max:255',
-            'price' => 'required|numeric'
+            'price' => 'required|numeric',
         ]);
 
-        \App\Models\Service::create($data);
+        Service::create($data);
+
         return redirect()->route('services.index')->with('success', 'Serviço criado com sucesso!');
     }
 
-    public function show(\App\Models\Service $service)
+    public function show(Service $service)
     {
         return view('services.show', compact('service'));
     }
 
-    public function edit(\App\Models\Service $service)
+    public function edit(Service $service)
     {
         return view('services.edit', compact('service'));
     }
 
-    public function update(\Illuminate\Http\Request $request, \App\Models\Service $service)
+    public function update(Request $request, Service $service)
     {
         $data = $request->validate([
             'name' => 'required|string|max:255',
-            'price' => 'required|numeric'
+            'price' => 'required|numeric',
         ]);
 
         $service->update($data);
+
         return redirect()->route('services.index')->with('success', 'Serviço atualizado com sucesso!');
     }
 
-    public function destroy(\App\Models\Service $service)
+    public function destroy(Service $service)
     {
         $service->delete();
+
         return redirect()->route('services.index')->with('success', 'Serviço removido com sucesso!');
     }
 }

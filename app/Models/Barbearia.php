@@ -30,13 +30,13 @@ class Barbearia extends Model
 
     public function getNextBillingDateAttribute()
     {
-        if (!$this->created_at) {
+        if (! $this->created_at) {
             return now()->addDays(30);
         }
-        
+
         $daysSinceCreation = $this->created_at->diffInDays(now());
         $cycles = floor($daysSinceCreation / 30);
-        
+
         return $this->created_at->copy()->addDays(($cycles + 1) * 30);
     }
 
