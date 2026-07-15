@@ -8,8 +8,35 @@ class AdminController extends Controller
 {
     public function index()
     {
-        $admins = \App\Models\Admin::all();
-        return view('admins.index', compact('admins'));
+        // Carrega todas as barbearias com a contagem de usuários (equipa)
+        $barbearias = \App\Models\Barbearia::withCount('users')->get();
+        
+        // Indicadores do topo
+        $totalSaloes = $barbearias->count();
+        $saloesAtivos = $barbearias->where('isactive', true)->count();
+        $receitaMensal = $barbearias->where('isactive', true)->sum('plano');
+        
+        $ticketMedio = $saloesAtivos > 0 ? $receitaMensal / $saloesAtivos : 0;
+        
+        // Salões inativos / suspensos / em atraso
+        $saloesEmAtraso = $barbearias->where('isactive', false)->count();
+        $valorEmRisco = $barbearias->where('isactive', false)->sum('plano');
+        
+        // Salões a expirar em até 5 dias
+        $saloesAExpirar = $barbearias->filter(function ($barbearia) {
+            return $barbearia->days_until_expiration <= 5 && $barbearia->days_until_expiration >= 0;
+        })->count(); 
+        
+        return view('admins.index', compact(
+            'barbearias',
+            'totalSaloes',
+            'saloesAtivos',
+            'receitaMensal',
+            'saloesAExpirar',
+            'ticketMedio',
+            'saloesEmAtraso',
+            'valorEmRisco'
+        ));
     }
 
     public function create()
