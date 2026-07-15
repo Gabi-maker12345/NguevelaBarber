@@ -6,14 +6,50 @@ use App\Models\Atendimento;
 use App\Models\Barbearia;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
     public function index()
     {
-        $users = User::with('barbearia')->get();
+        // Pega o usuário logado (barbeiro)
+        $user = Auth::user()?->user;
 
-        return view('users.index', compact('users'));
+        // Fallback temporário caso não esteja logado
+        if (!$user) {
+            $user = \App\Models\User::first();
+        }
+
+        if (!$user) {
+            return view('users.index')->with('error', 'Nenhum barbeiro encontrado.');
+        }
+
+        $hoje = \Carbon\Carbon::today();
+
+        // Atendimentos de hoje deste barbeiro
+        $atendimentosHoje = \App\Models\Atendimento::with(['service', 'pagamento'])
+            ->where('user_id', $user->id)
+            ->where('horario', '>=', $hoje)
+            ->orderBy('horario', 'desc')
+            ->get();
+
+        $faturadoHoje = $atendimentosHoje->sum('valor');
+        $qtdAtendimentosHoje = $atendimentosHoje->count();
+        $ticketMedioHoje = $qtdAtendimentosHoje > 0 ? $faturadoHoje / $qtdAtendimentosHoje : 0;
+
+        // Dados para o modal de novo atendimento (3 toques)
+        $servicos = \App\Models\Service::all();
+        $pagamentos = \App\Models\Pagamento::all();
+
+        return view('users.index', compact(
+            'user',
+            'atendimentosHoje',
+            'faturadoHoje',
+            'qtdAtendimentosHoje',
+            'ticketMedioHoje',
+            'servicos',
+            'pagamentos'
+        ));
     }
 
     public function create()
@@ -76,17 +112,19 @@ class UserController extends Controller
     }
 
     // Atendimentos responsability
-    public function storeAtendimento(Request $request, User $user)
+    public function storeAtendimento(\Illuminate\Http\Request $request, \App\Models\User $user)
     {
         $data = $request->validate([
             'service_id' => 'required|exists:services,id',
             'pagamento_id' => 'required|exists:pagamentos,id',
-            'valor' => 'required|numeric',
-            'horario' => 'required|date',
+            'valor' => 'required|numeric'
         ]);
 
         $data['user_id'] = $user->id;
-        Atendimento::create($data);
+        // Se a hora não for enviada no formulário, assumimos o momento atual
+        $data['horario'] = $request->input('horario', now());
+        
+        \App\Models\Atendimento::create($data);
 
         return redirect()->back()->with('success', 'Atendimento registrado com sucesso!');
     }
