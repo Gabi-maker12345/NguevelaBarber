@@ -51,7 +51,7 @@ class BarbeariaController extends Controller
         // Fecho de caixa (Hoje) por método
         $pagamentos = Pagamento::all();
         $fechoCaixaHoje = $pagamentos->map(fn ($pagamento) => [
-            'metodo' => $pagamento->name,
+            'metodo' => $this->paymentDisplayName($pagamento->name),
             'total' => $atendimentosHoje->where('pagamento_id', $pagamento->id)->sum('valor'),
         ])->values();
 
@@ -203,5 +203,14 @@ class BarbeariaController extends Controller
     {
         $barbearia->delete();
         return redirect()->route('admins.index')->with('success', 'Barbearia removida com sucesso!');
+    }
+
+    private function paymentDisplayName(string $name): string
+    {
+        return match ($name) {
+            'TPA', 'Multicaixa (TPA)' => 'Multicaixa (TPA)',
+            'Transferência', 'Transferência (IBAN)' => 'Transferência (IBAN)',
+            default => $name,
+        };
     }
 }

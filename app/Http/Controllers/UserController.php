@@ -191,7 +191,18 @@ class UserController extends Controller
         $data['user_id'] = $user->id;
         $data['horario'] = $request->input('horario', now());
         
-        Atendimento::create($data);
+        $atendimento = Atendimento::create($data);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'id' => $atendimento->id,
+                'user_id' => $atendimento->user_id,
+                'service_id' => $atendimento->service_id,
+                'pagamento_id' => $atendimento->pagamento_id,
+                'valor' => $atendimento->valor,
+                'horario' => $atendimento->horario,
+            ], 201);
+        }
 
         return redirect()->back()->with('success', 'Atendimento registrado com sucesso!');
     }

@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+@vite(['resources/css/dashboard.css'])
 <style>
   :root{
     --bg-deep:#0B0B0D;
@@ -886,6 +887,7 @@
             @php
                 // Lógica de status baseada nos dados reais
                 $diasRestantes = $barbearia->days_until_expiration;
+                $proximaCobranca = $barbearia->next_billing_date;
                 $statusClass = 'ativo';
                 $statusText = 'Ativo';
                 
@@ -915,7 +917,7 @@
                 </div>
               </td>
               <td data-label="Plano"><span class="plan-tag">Mensal · {{ number_format($barbearia->plano, 0, ',', '.') }} Kz</span></td>
-              <td data-label="Expira em">{{ $barbearia->expiration_date ? \Carbon\Carbon::parse($barbearia->expiration_date)->format('d M Y') : 'N/A' }}</td>
+              <td data-label="Expira em">{{ $proximaCobranca->format('d M Y') }}</td>
               <td data-label="Status"><span class="status-badge {{ $statusClass }}"><span class="status-dot"></span>{{ $statusText }}</span></td>
               <td data-label="Equipa">{{ $barbearia->users_count }} pessoas</td>
               <td class="cell-actions">
@@ -1007,18 +1009,20 @@
             <tbody id="billingSalonBody">
                 @foreach($barbearias as $barbearia)
                 @php
+                    $diasRestantes = $barbearia->days_until_expiration;
+                    $proximaCobranca = $barbearia->next_billing_date;
                     $statusBilling = $barbearia->isactive ? 'ativo' : 'suspenso';
                     $textoStatus = $barbearia->isactive ? 'Em dia' : 'Em atraso';
-                    if($barbearia->isactive && $barbearia->days_until_expiration <= 5) {
+                    if($barbearia->isactive && $diasRestantes <= 5) {
                         $statusBilling = 'expirar';
-                        $textoStatus = "Vence em {$barbearia->days_until_expiration}d";
+                        $textoStatus = "Vence em {$diasRestantes}d";
                     }
                 @endphp
                 <tr>
                     <td data-label="Salão">{{ $barbearia->name }}</td>
                     <td data-label="Plano">Mensal</td>
                     <td data-label="Valor">{{ number_format($barbearia->plano, 0, ',', '.') }} Kz</td>
-                    <td data-label="Próxima cobrança">{{ $barbearia->expiration_date ? \Carbon\Carbon::parse($barbearia->expiration_date)->format('d M Y') : '-' }}</td>
+                    <td data-label="Próxima cobrança">{{ $proximaCobranca->format('d M Y') }}</td>
                     <td data-label="Estado"><span class="status-badge {{ $statusBilling }}"><span class="status-dot"></span>{{ $textoStatus }}</span></td>
                 </tr>
                 @endforeach

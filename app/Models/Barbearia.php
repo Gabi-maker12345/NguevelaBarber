@@ -22,6 +22,12 @@ class Barbearia extends Authenticatable
         'isactive',
     ];
 
+    protected $appends = [
+        'next_billing_date',
+        'expiration_date',
+        'days_until_expiration',
+    ];
+
     protected $hidden = [
         'password',
         'remember_token',
@@ -55,6 +61,11 @@ class Barbearia extends Authenticatable
         $cycles = floor($daysSinceCreation / 30);
 
         return $this->created_at->copy()->addDays(($cycles + 1) * 30);
+    }
+
+    public function getExpirationDateAttribute()
+    {
+        return $this->next_billing_date;
     }
 
     public function getDaysUntilExpirationAttribute()

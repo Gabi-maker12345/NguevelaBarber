@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+@vite(['resources/css/dashboard.css'])
 <style>
   /* ===== TOKENS ===== */
   :root{
@@ -318,12 +319,12 @@
             @php
               $badgeClass = match($atendimento->pagamento?->name) {
                 'Dinheiro físico' => 'dinheiro',
-                'Multicaixa (TPA)' => 'multicaixa',
+                'TPA', 'Multicaixa (TPA)' => 'multicaixa',
                 default => 'transferencia',
               };
               $badgeLabel = match($atendimento->pagamento?->name) {
                 'Dinheiro físico' => 'Dinheiro',
-                'Multicaixa (TPA)' => 'Multicaixa',
+                'TPA', 'Multicaixa (TPA)' => 'Multicaixa',
                 default => 'Transferência',
               };
             @endphp
@@ -443,6 +444,39 @@
     </div>
   </div>
 
+@php
+  $servicosPayload = $servicos->map(fn($s) => [
+    'id' => $s->id,
+    'nome' => $s->name,
+    'preco' => (float) $s->price,
+  ])->values();
+
+  $pagamentosPayload = $pagamentos->map(fn($p) => [
+    'id' => $p->id,
+    'nome' => $p->name,
+    'sub' => match($p->name) {
+      'Dinheiro físico' => 'Pagamento em numerário',
+      'TPA', 'Multicaixa (TPA)' => 'Cartão de débito/crédito',
+      default => 'Transferência bancária',
+    },
+    'color' => match($p->name) {
+      'Dinheiro físico' => 'var(--ok)',
+      'TPA', 'Multicaixa (TPA)' => 'var(--info)',
+      default => 'var(--warn)',
+    },
+    'bg' => match($p->name) {
+      'Dinheiro físico' => 'var(--ok-soft)',
+      'TPA', 'Multicaixa (TPA)' => 'var(--info-soft)',
+      default => 'var(--warn-soft)',
+    },
+    'icon' => match($p->name) {
+      'Dinheiro físico' => '<path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+      'TPA', 'Multicaixa (TPA)' => '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
+      default => '<path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/>',
+    },
+  ])->values();
+@endphp
+
 <script>
   // ============================================================
   // DADOS DO BACKEND (injetados via Blade — sem mocks)
@@ -450,32 +484,9 @@
   const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
   const USER_ID = {{ $user->id }};
 
-  const servicos = @json($servicos->map(fn($s) => ['id' => $s->id, 'nome' => $s->name, 'preco' => $s->price]));
+  const servicos = @json($servicosPayload);
 
-  const metodosPagamento = @json($pagamentos->map(fn($p) => [
-    'id'    => $p->id,
-    'nome'  => $p->name,
-    'sub'   => match($p->name) {
-      'Dinheiro físico'    => 'Pagamento em numerário',
-      'Multicaixa (TPA)'   => 'Cartão de débito/crédito',
-      default              => 'Transferência bancária',
-    },
-    'color' => match($p->name) {
-      'Dinheiro físico'    => 'var(--ok)',
-      'Multicaixa (TPA)'   => 'var(--info)',
-      default              => 'var(--warn)',
-    },
-    'bg' => match($p->name) {
-      'Dinheiro físico'    => 'var(--ok-soft)',
-      'Multicaixa (TPA)'   => 'var(--info-soft)',
-      default              => 'var(--warn-soft)',
-    },
-    'icon' => match($p->name) {
-      'Dinheiro físico'    => '<path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
-      'Multicaixa (TPA)'   => '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
-      default              => '<path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/>',
-    },
-  ]));
+  const metodosPagamento = @json($pagamentosPayload);
 
   // estado do fluxo de registo
   let servicoSelecionado = null;
@@ -604,8 +615,11 @@
         valor: valor,
       })
     })
-    .then(res => {
-      if(!res.ok) throw new Error('Erro ao registar');
+    .then(async res => {
+      if(!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || 'Erro ao registar');
+      }
       return res.json();
     })
     .then(() => {
@@ -617,9 +631,9 @@
         updateDiaStats(valor);
       }, 1400);
     })
-    .catch(() => {
+    .catch(error => {
       document.getElementById('successOverlay').classList.remove('show');
-      showToast('Erro ao guardar o atendimento. Tenta novamente.');
+      showToast(error.message || 'Erro ao guardar o atendimento. Tenta novamente.');
     });
   }
 

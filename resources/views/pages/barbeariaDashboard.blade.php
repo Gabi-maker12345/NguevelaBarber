@@ -624,7 +624,7 @@
   $servicosPayload = $servicos->map(fn($s) => [
     'id' => $s->id,
     'nome' => $s->name,
-    'preco' => $s->price,
+    'preco' => (float) $s->price,
   ])->values();
 
   $atendimentosPayload = $todosAtendimentos->map(fn($a) => [
@@ -633,7 +633,7 @@
     'funcionarioNome' => $a->user?->name ?? '-',
     'servicoNome' => $a->service?->name ?? '-',
     'pagamento' => $a->pagamento?->name ?? '-',
-    'valor' => $a->valor,
+    'valor' => (float) $a->valor,
     'data' => $a->horario,
   ])->values();
 @endphp
@@ -663,10 +663,23 @@
   // ============================================================
   // HELPERS
   // ============================================================
-  function kz(v){ return Math.round(v).toLocaleString('pt-AO') + ' Kz'; }
+  function moneyNumber(v){
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  }
+  function kz(v){ return Math.round(moneyNumber(v)).toLocaleString('pt-AO') + ' Kz'; }
   function initials(nome){ return nome.split(' ').filter(Boolean).slice(0,2).map(p => p[0].toUpperCase()).join(''); }
   function gerarSenha(){ return 'Ng-' + Math.floor(1000 + Math.random()*9000); }
   function isValidEmail(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+  function paymentKey(nome){
+    if(nome === 'TPA' || nome === 'Multicaixa (TPA)') return 'Multicaixa (TPA)';
+    if(nome === 'Transferência' || nome === 'Transferência (IBAN)') return 'Transferência (IBAN)';
+    return nome || '-';
+  }
+  function paymentLabel(nome){
+    const key = paymentKey(nome);
+    return PAG_META[key]?.label || key;
+  }
 
   function isSameDay(a, b){ const ad = new Date(a), bd = new Date(b); return ad.getFullYear()===bd.getFullYear() && ad.getMonth()===bd.getMonth() && ad.getDate()===bd.getDate(); }
   function startOfWeek(ref){ const d = new Date(ref); const day = d.getDay(); const diff = (day===0 ? -6 : 1) - day; d.setDate(d.getDate()+diff); d.setHours(0,0,0,0); return d; }
@@ -685,7 +698,7 @@
     return atendimentos.filter(a => inRange(a.data, ini, fim));
   }
 
-  function sumValor(lista){ return lista.reduce((s,a) => s + a.valor, 0); }
+  function sumValor(lista){ return lista.reduce((s,a) => s + moneyNumber(a.valor), 0); }
   function funcById(id){ return funcionarios.find(f => f.id === id); }
   function servById(id){ return servicos.find(s => s.id === id); }
 
@@ -749,7 +762,7 @@
     const metodos = ['Dinheiro físico', 'Multicaixa (TPA)', 'Transferência (IBAN)'];
     const ids = ['caixaDinheiro', 'caixaMulticaixa', 'caixaTransferencia'];
     metodos.forEach((m, i) => {
-      document.getElementById(ids[i]).textContent = kz(sumValor(lista.filter(a => a.pagamento === m)));
+      document.getElementById(ids[i]).textContent = kz(sumValor(lista.filter(a => paymentKey(a.pagamento) === m)));
     });
     const body = document.getElementById('caixaBody');
     body.innerHTML = '';
@@ -759,7 +772,7 @@
       const hora = d.toLocaleTimeString('pt-AO', { hour:'2-digit', minute:'2-digit' });
       const diaLabel = caixaPeriod === 'dia' ? hora : `${d.toLocaleDateString('pt-AO')} ${hora}`;
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td data-label="Hora">${diaLabel}</td><td data-label="Barbeiro">${a.funcionarioNome}</td><td data-label="Serviço">${a.servicoNome}</td><td data-label="Pagamento">${a.pagamento}</td><td data-label="Valor"><span class="price-tag">${kz(a.valor)}</span></td>`;
+      tr.innerHTML = `<td data-label="Hora">${diaLabel}</td><td data-label="Barbeiro">${a.funcionarioNome}</td><td data-label="Serviço">${a.servicoNome}</td><td data-label="Pagamento">${paymentLabel(a.pagamento)}</td><td data-label="Valor"><span class="price-tag">${kz(a.valor)}</span></td>`;
       body.appendChild(tr);
     });
     document.getElementById('caixaEmpty').style.display = lista.length ? 'none' : 'block';
@@ -795,7 +808,7 @@
     pagBody.innerHTML = '';
     const total = sumValor(lista) || 1;
     Object.keys(PAG_META).forEach(key => {
-      const valor = sumValor(lista.filter(a => a.pagamento === key));
+      const valor = sumValor(lista.filter(a => paymentKey(a.pagamento) === key));
       const pct = Math.round((valor/total)*100);
       const tr = document.createElement('tr');
       tr.innerHTML = `<td data-label="Método">${PAG_META[key].label}</td><td data-label="Valor">${kz(valor)}</td><td data-label="%">${sumValor(lista) ? pct : 0}%</td>`;
@@ -808,7 +821,7 @@
     lista.forEach(a => {
       if(!porFunc[a.funcionarioId]) porFunc[a.funcionarioId] = { nome: a.funcionarioNome, count:0, total:0 };
       porFunc[a.funcionarioId].count++;
-      porFunc[a.funcionarioId].total += a.valor;
+      porFunc[a.funcionarioId].total += moneyNumber(a.valor);
     });
     const eqList = Object.values(porFunc).sort((a,b) => b.total - a.total);
     if(eqList.length===0){
@@ -843,13 +856,13 @@
     doc.setFont('helvetica','normal'); doc.setFontSize(11);
     const total = sumValor(lista) || 1;
     Object.keys(PAG_META).forEach(key => {
-      const valor = sumValor(lista.filter(a => a.pagamento === key));
+      const valor = sumValor(lista.filter(a => paymentKey(a.pagamento) === key));
       doc.text(`${PAG_META[key].label}: ${kz(valor)} (${Math.round((valor/total)*100)}%)`, 14, y); y+=7;
     });
     y+=8; doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.text('Produtividade da equipa', 14, y); y+=8;
     doc.setFont('helvetica','normal'); doc.setFontSize(11);
     const porFunc = {};
-    lista.forEach(a => { if(!porFunc[a.funcionarioId]) porFunc[a.funcionarioId]={nome:a.funcionarioNome,count:0,total:0}; porFunc[a.funcionarioId].count++; porFunc[a.funcionarioId].total+=a.valor; });
+    lista.forEach(a => { if(!porFunc[a.funcionarioId]) porFunc[a.funcionarioId]={nome:a.funcionarioNome,count:0,total:0}; porFunc[a.funcionarioId].count++; porFunc[a.funcionarioId].total+=moneyNumber(a.valor); });
     Object.values(porFunc).sort((a,b) => b.total-a.total).forEach(r => { if(y>275){ doc.addPage(); y=20; } doc.text(`${r.nome} — ${r.count} atendimento(s) — ${kz(r.total)}`, 14, y); y+=7; });
     doc.save(`relatorio-${periodo}-${new Date().toISOString().slice(0,10)}.pdf`);
     showToast('Relatório PDF gerado com sucesso.');
