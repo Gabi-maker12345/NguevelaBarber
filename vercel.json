@@ -3,16 +3,13 @@
   "builds": [
     {
       "src": "api/index.php",
-      "use": "@vercel/php@latest"
+      "use": "@vercel/php@latest",
+      "config": {
+        "memory": 1024,
+        "maxDuration": 30
+      }
     }
   ],
-  "functions": {
-    "api/index.php": {
-      "runtime": "@vercel/php@latest",
-      "memory": 1024,
-      "maxDuration": 30
-    }
-  },
   "routes": [
     {
       "src": "/build/(.*)",
