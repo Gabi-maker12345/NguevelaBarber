@@ -3,9 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
-class Barbearia extends Model
+class Barbearia extends Authenticatable 
 {
+    use Notifiable; 
+
     protected $fillable = [
         'admin_id',
         'name',
@@ -13,10 +17,23 @@ class Barbearia extends Model
         'plano',
         'gestor',
         'email',
-        'number',
+        'number', 
         'password',
         'isactive',
     ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'password' => 'hashed',
+            'isactive' => 'boolean',
+        ];
+    }
 
     public function admin()
     {
