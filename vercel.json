@@ -1,17 +1,11 @@
 {
-
-  "builds": [
-      {
-        "src": "index.php",
-        "use": "@vercel/static-build",
-        "config": {
-          "distDir": "."
-        }
-      }
-    ],
-    "buildCommand": "curl -sS https://getcomposer.org/installer | php && php composer.phar install --no-dev --optimize-autoloader",
-
   "version": 2,
+  "builds": [
+    {
+      "src": "api/index.php",
+      "use": "@vercel/php@latest"
+    }
+  ],
   "functions": {
     "api/index.php": {
       "runtime": "@vercel/php@latest",
@@ -52,6 +46,4 @@
     "VIEW_COMPILED_PATH": "/tmp/laravel/views",
     "COMPOSER_VERSION": "2"
   }
-
-  
 }
