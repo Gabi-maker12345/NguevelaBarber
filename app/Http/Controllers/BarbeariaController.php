@@ -84,7 +84,7 @@ class BarbeariaController extends Controller
         // Tabela de Fecho de Caixa (Atendimentos de hoje)
         $ultimosAtendimentos = $atendimentosHoje->sortByDesc('horario');
 
-        return view('barbearias.index', compact(
+        return view('pages.barbeariaDashboard', compact(
             'barbearia',
             'faturamentoHoje',
             'faturamentoSemana',

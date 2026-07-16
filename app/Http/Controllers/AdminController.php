@@ -29,7 +29,7 @@ class AdminController extends Controller
             return $barbearia->days_until_expiration <= 5 && $barbearia->days_until_expiration >= 0;
         })->count();
 
-        return view('admins.index', compact(
+        return view('pages.adminDashboard', compact(
             'barbearias',
             'totalSaloes',
             'saloesAtivos',

@@ -41,7 +41,7 @@ class UserController extends Controller
         $servicos = \App\Models\Service::all();
         $pagamentos = \App\Models\Pagamento::all();
 
-        return view('users.index', compact(
+        return view('pages.userDashboard', compact(
             'user',
             'atendimentosHoje',
             'faturadoHoje',
