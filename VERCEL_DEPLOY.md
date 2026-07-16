@@ -68,14 +68,18 @@ Se preferir, rode apenas os seeders que realmente quer em producao.
 
 ## Build
 
-O script Composer `vercel` roda:
+O `vercel.json` sobrescreve o install/build do painel da Vercel:
 
 ```bash
 npm ci
 npm run build
 ```
 
-Assim o Vite gera `public/build` durante o deploy.
+Assim o Vite gera `public/build` como assets estaticos durante o deploy, e `outputDirectory` aponta para `public` porque Laravel nao usa a pasta `dist`. O runtime `vercel-php` instala as dependencias PHP com o Composer embutido e depois roda o script Composer `vercel`, que executa:
+
+```bash
+php artisan package:discover --ansi
+```
 
 ## Observacoes
 
