@@ -10,7 +10,7 @@ $runtimePaths = [
 ];
 
 foreach ($runtimePaths as $key => $path) {
-    if (getenv($key) === false) {
+    if (getenv($key) === false || getenv($key) === '') {
         putenv($key.'='.$path);
         $_ENV[$key] = $path;
         $_SERVER[$key] = $path;
