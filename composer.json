@@ -52,6 +52,7 @@
             "npm run build"
         ],
         "vercel": [
+            "@php -r \"foreach (['/tmp/laravel', '/tmp/laravel/views'] as $dir) { is_dir($dir) || @mkdir($dir, 0777, true); }\"",
             "@php artisan package:discover --ansi"
         ],
         "dev": [

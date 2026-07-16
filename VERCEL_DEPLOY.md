@@ -75,9 +75,10 @@ npm ci
 npm run build
 ```
 
-Assim o Vite gera `public/build` como assets estaticos durante o deploy, e `outputDirectory` aponta para `public` porque Laravel nao usa a pasta `dist`. O runtime `vercel-php` instala as dependencias PHP com o Composer embutido e depois roda o script Composer `vercel`, que executa:
+Assim o Vite gera `public/build` como assets estaticos durante o deploy, e `outputDirectory` aponta para `public` porque Laravel nao usa a pasta `dist`. O runtime `vercel-php` instala as dependencias PHP com o Composer embutido e depois roda o script Composer `vercel`, que cria os diretorios temporarios usados pelos caches do Laravel e executa:
 
 ```bash
+php -r "foreach (['/tmp/laravel', '/tmp/laravel/views'] as $dir) { is_dir($dir) || @mkdir($dir, 0777, true); }"
 php artisan package:discover --ansi
 ```
 
