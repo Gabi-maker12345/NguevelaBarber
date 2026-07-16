@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
+@vite(['resources/css/dashboard.css'])
 <style>
   /* ===== ESTILOS ESPECÍFICOS DA BARBEARIA DASHBOARD ===== */
   .dash-grid{ display:grid; grid-template-columns:1.1fr 1fr; gap:16px; margin-bottom:16px; }
@@ -611,6 +611,33 @@
   <span id="toastMsg">Alterações guardadas.</span>
 </div>
 
+@php
+  $funcionariosPayload = $equipa->map(fn($u) => [
+    'id' => $u->id,
+    'nome' => $u->name,
+    'email' => $u->email,
+    'senha' => '••••••',
+    'status' => $u->isactive ? 'ativo' : 'inativo',
+    'atendimentosMes' => $u->atendimentos_count ?? 0,
+  ])->values();
+
+  $servicosPayload = $servicos->map(fn($s) => [
+    'id' => $s->id,
+    'nome' => $s->name,
+    'preco' => $s->price,
+  ])->values();
+
+  $atendimentosPayload = $todosAtendimentos->map(fn($a) => [
+    'id' => $a->id,
+    'funcionarioId' => $a->user_id,
+    'funcionarioNome' => $a->user?->name ?? '-',
+    'servicoNome' => $a->service?->name ?? '-',
+    'pagamento' => $a->pagamento?->name ?? '-',
+    'valor' => $a->valor,
+    'data' => $a->horario,
+  ])->values();
+@endphp
+
 <script>
   // ============================================================
   // DADOS DO BACKEND (injetados pelo Blade)
@@ -626,27 +653,9 @@
   };
 
   // Arrays injetados do controller
-  let funcionarios = @json($equipa->map(fn($u) => [
-    'id'    => $u->id,
-    'nome'  => $u->name,
-    'email' => $u->email,
-    'senha' => '••••••',
-    'status'=> $u->isactive ? 'ativo' : 'inativo',
-    'atendimentosMes' => $u->atendimentos->count(),
-  ]));
-
-  let servicos = @json($servicos->map(fn($s) => ['id' => $s->id, 'nome' => $s->name, 'preco' => $s->price]));
-
-  // Todos os atendimentos da barbearia (últimos 45 dias, para os filtros do fecho de caixa)
-  let atendimentos = @json($todosAtendimentos->map(fn($a) => [
-    'id'            => $a->id,
-    'funcionarioId' => $a->user_id,
-    'funcionarioNome' => $a->user?->name ?? '—',
-    'servicoNome'   => $a->service?->name ?? '—',
-    'pagamento'     => $a->pagamento?->name ?? '—',
-    'valor'         => $a->valor,
-    'data'          => $a->horario,
-  ]));
+  let funcionarios = @json($funcionariosPayload);
+  let servicos = @json($servicosPayload);
+  let atendimentos = @json($atendimentosPayload);
 
   let funcSeq = funcionarios.length;
   let servSeq = servicos.length;

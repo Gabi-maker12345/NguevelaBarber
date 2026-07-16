@@ -26,7 +26,11 @@ class ServiceController extends Controller
             'price' => 'required|numeric',
         ]);
 
-        Service::create($data);
+        $service = Service::create($data);
+
+        if ($request->expectsJson()) {
+            return response()->json($service, 201);
+        }
 
         return redirect()->route('services.index')->with('success', 'Serviço criado com sucesso!');
     }
@@ -50,12 +54,20 @@ class ServiceController extends Controller
 
         $service->update($data);
 
+        if ($request->expectsJson()) {
+            return response()->json($service->fresh());
+        }
+
         return redirect()->route('services.index')->with('success', 'Serviço atualizado com sucesso!');
     }
 
     public function destroy(Service $service)
     {
         $service->delete();
+
+        if (request()->expectsJson()) {
+            return response()->noContent();
+        }
 
         return redirect()->route('services.index')->with('success', 'Serviço removido com sucesso!');
     }

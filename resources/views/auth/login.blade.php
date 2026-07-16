@@ -475,7 +475,7 @@
       <div class="mobile-name"><span class="c-white">Nguevela</span><span class="c-gold">Beauty</span></div>
       <div class="mobile-tagline">Gestão simplificada</div>
 
-      <form method="POST" action="{{ route('login') }}">
+      <form method="POST" action="{{ route('login.store') }}">
         @csrf
         
         @if ($errors->any())
@@ -514,7 +514,7 @@
       <div class="form-title">Iniciar sessão</div>
       <div class="form-desc">Aceda à conta do seu salão para gerir atendimentos e faturação.</div>
 
-      <form method="POST" action="{{ route('login') }}">
+      <form method="POST" action="{{ route('login.store') }}">
         @csrf
 
         @if ($errors->any())

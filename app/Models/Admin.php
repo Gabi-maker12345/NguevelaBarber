@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class Admin extends Authenticatable
 {
@@ -10,7 +10,6 @@ class Admin extends Authenticatable
         'name',
         'email',
         'password',
-        'isactive',
     ];
 
     protected $hidden = [

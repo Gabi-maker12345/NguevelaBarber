@@ -112,6 +112,7 @@
     cursor:pointer;
     transition:background .15s ease, color .15s ease;
     -webkit-tap-highlight-color:transparent;
+    text-decoration: none;
   }
 
   .nav-item svg{ flex-shrink:0; opacity:0.85; }
@@ -200,6 +201,7 @@
     cursor:pointer;
     transition:filter .15s ease, background .15s ease;
     white-space:nowrap;
+    text-decoration: none;
   }
   .btn-gold{ background:var(--gold); color:var(--gold-dark); }
   .btn-gold:hover{ filter:brightness(1.08); }
@@ -767,10 +769,6 @@
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
       Visão geral
     </div>
-    <div class="nav-item" data-view="overview" onclick="switchView('overview')">
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-7h6v7"/></svg>
-      Salões
-    </div>
     <div class="nav-item" data-view="billing" onclick="switchView('billing')">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
       Faturação SaaS
@@ -780,19 +778,12 @@
       Configurações
     </div>
 
-    <div class="nav-group-label">Suporte</div>
-    <div class="nav-item" data-view="requests" onclick="switchView('requests')">
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      Pedidos e comprovativos
-      <span id="requestsBadge" style="display:none; margin-left:auto; background:var(--danger); color:#fff; font-size:10.5px; font-weight:700; padding:1px 6px; border-radius:10px;"></span>
-    </div>
-
     <div class="sidebar-footer">
       <div class="admin-chip">
-        <div class="admin-avatar">AM</div>
+        <div class="admin-avatar">{{ substr(Auth::user()->name ?? 'AM', 0, 2) }}</div>
         <div>
-          <div class="admin-name">Admin Master</div>
-          <div class="admin-email">master@nguevela.ao</div>
+          <div class="admin-name">{{ Auth::user()->name ?? 'Admin' }}</div>
+          <div class="admin-email">{{ Auth::user()->email ?? 'master@nguevela.ao' }}</div>
         </div>
       </div>
     </div>
@@ -809,7 +800,7 @@
       <div class="topbar-actions" id="topbarActions">
         <div class="search-field">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-          <input id="searchInput" type="text" placeholder="Procurar salão ou dono..." oninput="renderTable()">
+          <input id="searchInput" type="text" placeholder="Procurar salão ou dono..." oninput="filterTable()">
         </div>
         <button class="btn btn-gold desktop-only" onclick="openCreateModal()">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
@@ -830,7 +821,7 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-7h6v7"/></svg>
           </div>
         </div>
-        <div class="kpi-value" id="kpiTotal">—</div>
+        <div class="kpi-value">{{ $totalSaloes }}</div>
         <div class="kpi-delta">em todo o país</div>
       </div>
 
@@ -841,8 +832,8 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
           </div>
         </div>
-        <div class="kpi-value" id="kpiAtivos">—</div>
-        <div class="kpi-delta up" id="kpiAtivosPct">—</div>
+        <div class="kpi-value">{{ $saloesAtivos }}</div>
+        <div class="kpi-delta up">{{ $saloesAtivos > 0 ? round(($saloesAtivos/$totalSaloes)*100) : 0 }}% da base</div>
       </div>
 
       <div class="kpi-card">
@@ -852,7 +843,7 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
           </div>
         </div>
-        <div class="kpi-value" id="kpiExpirar">—</div>
+        <div class="kpi-value">{{ $saloesAExpirar }}</div>
         <div class="kpi-delta warn">requer atenção</div>
       </div>
 
@@ -863,7 +854,7 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
           </div>
         </div>
-        <div class="kpi-value" id="kpiReceita">—</div>
+        <div class="kpi-value">{{ number_format($receitaMensal, 0, ',', '.') }} Kz</div>
         <div class="kpi-delta">soma das mensalidades ativas</div>
       </div>
     </div>
@@ -890,13 +881,73 @@
               <th></th>
             </tr>
           </thead>
-          <tbody id="salonsBody"></tbody>
+          <tbody id="salonsBody">
+            @foreach($barbearias as $barbearia)
+            @php
+                // Lógica de status baseada nos dados reais
+                $diasRestantes = $barbearia->days_until_expiration;
+                $statusClass = 'ativo';
+                $statusText = 'Ativo';
+                
+                if (!$barbearia->isactive) {
+                    $statusClass = 'suspenso';
+                    $statusText = 'Suspenso';
+                } elseif ($diasRestantes !== null && $diasRestantes <= 5 && $diasRestantes >= 0) {
+                    $statusClass = 'expirar';
+                    $statusText = "Expira em {$diasRestantes}d";
+                } elseif ($diasRestantes !== null && $diasRestantes < 0) {
+                     $statusClass = 'suspenso';
+                     $statusText = 'Expirado';
+                }
+            @endphp
+            <tr class="salon-row" 
+                data-status="{{ $statusClass }}" 
+                data-name="{{ strtolower($barbearia->name) }}" 
+                data-owner="{{ strtolower($barbearia->gestor) }}">
+                
+              <td class="cell-salon">
+                <div class="salon-cell">
+                  <div class="salon-logo">{{ strtoupper(substr($barbearia->name, 0, 2)) }}</div>
+                  <div>
+                    <div class="salon-name">{{ $barbearia->name }}</div>
+                    <div class="salon-owner">{{ $barbearia->gestor }} · {{ $barbearia->municipio }}</div>
+                  </div>
+                </div>
+              </td>
+              <td data-label="Plano"><span class="plan-tag">Mensal · {{ number_format($barbearia->plano, 0, ',', '.') }} Kz</span></td>
+              <td data-label="Expira em">{{ $barbearia->expiration_date ? \Carbon\Carbon::parse($barbearia->expiration_date)->format('d M Y') : 'N/A' }}</td>
+              <td data-label="Status"><span class="status-badge {{ $statusClass }}"><span class="status-dot"></span>{{ $statusText }}</span></td>
+              <td data-label="Equipa">{{ $barbearia->users_count }} pessoas</td>
+              <td class="cell-actions">
+                <div class="row-actions">
+                  {{-- Botão Editar abre modal --}}
+                  <button class="icon-btn" title="Ver detalhes" onclick='openDetailModal(@json($barbearia))'>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                  
+                  {{-- Formulário de exclusão --}}
+                  <form action="{{ route('barbearias.destroy', $barbearia->id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja remover esta barbearia?');" style="display:inline;">
+                      @csrf
+                      @method('DELETE')
+                      <button type="submit" class="icon-btn danger" title="Remover">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                      </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            @endforeach
+            
+            @if($barbearias->isEmpty())
+            <tr>
+                <td colspan="6" class="empty-state">
+                    <div class="empty-state-title">Nenhum salão encontrado</div>
+                    <div>Comece adicionando uma nova barbearia.</div>
+                </td>
+            </tr>
+            @endif
+          </tbody>
         </table>
-      </div>
-      <div id="emptyState" class="empty-state" style="display:none;">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <div class="empty-state-title">Nenhum salão encontrado</div>
-        <div>Tenta outro termo de pesquisa ou filtro.</div>
       </div>
     </div>
 
@@ -907,17 +958,17 @@
       <div class="summary-row">
         <div class="summary-card">
           <div class="summary-label">Receita mensal recorrente</div>
-          <div class="summary-value" id="billingMRR">—</div>
+          <div class="summary-value">{{ number_format($receitaMensal, 0, ',', '.') }} Kz</div>
           <div class="summary-note">soma dos planos de salões não suspensos</div>
         </div>
         <div class="summary-card">
           <div class="summary-label">Em atraso / suspensos</div>
-          <div class="summary-value" id="billingOverdue">—</div>
-          <div class="summary-note" id="billingOverdueValue">—</div>
+          <div class="summary-value">{{ $saloesEmAtraso }}</div>
+          <div class="summary-note">{{ number_format($valorEmRisco, 0, ',', '.') }} Kz em risco</div>
         </div>
         <div class="summary-card">
           <div class="summary-label">Ticket médio por salão</div>
-          <div class="summary-value" id="billingAvg">—</div>
+          <div class="summary-value">{{ number_format($ticketMedio, 0, ',', '.') }} Kz</div>
           <div class="summary-note">baseado no plano contratado</div>
         </div>
       </div>
@@ -928,7 +979,20 @@
             <thead>
               <tr><th>Plano</th><th>Preço</th><th>Salões ativos</th><th>Receita do plano</th></tr>
             </thead>
-            <tbody id="billingPlanBody"></tbody>
+            <tbody id="billingPlanBody">
+                {{-- Como o controller envia a coleção completa, agrupamos aqui via Blade --}}
+                @php
+                    $planosAgrupados = $barbearias->where('isactive', true)->groupBy('plano');
+                @endphp
+                @foreach($planosAgrupados as $valorPlano => $saloesDoPlano)
+                <tr>
+                    <td data-label="Plano"><strong>Mensal</strong></td>
+                    <td data-label="Preço">{{ number_format($valorPlano, 0, ',', '.') }} Kz</td>
+                    <td data-label="Salões ativos">{{ $saloesDoPlano->count() }}</td>
+                    <td data-label="Receita do plano">{{ number_format($valorPlano * $saloesDoPlano->count(), 0, ',', '.') }} Kz</td>
+                </tr>
+                @endforeach
+            </tbody>
           </table>
         </div>
       </div>
@@ -940,33 +1004,28 @@
             <thead>
               <tr><th>Salão</th><th>Plano</th><th>Valor</th><th>Próxima cobrança</th><th>Estado</th></tr>
             </thead>
-            <tbody id="billingSalonBody"></tbody>
+            <tbody id="billingSalonBody">
+                @foreach($barbearias as $barbearia)
+                @php
+                    $statusBilling = $barbearia->isactive ? 'ativo' : 'suspenso';
+                    $textoStatus = $barbearia->isactive ? 'Em dia' : 'Em atraso';
+                    if($barbearia->isactive && $barbearia->days_until_expiration <= 5) {
+                        $statusBilling = 'expirar';
+                        $textoStatus = "Vence em {$barbearia->days_until_expiration}d";
+                    }
+                @endphp
+                <tr>
+                    <td data-label="Salão">{{ $barbearia->name }}</td>
+                    <td data-label="Plano">Mensal</td>
+                    <td data-label="Valor">{{ number_format($barbearia->plano, 0, ',', '.') }} Kz</td>
+                    <td data-label="Próxima cobrança">{{ $barbearia->expiration_date ? \Carbon\Carbon::parse($barbearia->expiration_date)->format('d M Y') : '-' }}</td>
+                    <td data-label="Estado"><span class="status-badge {{ $statusBilling }}"><span class="status-dot"></span>{{ $textoStatus }}</span></td>
+                </tr>
+                @endforeach
+            </tbody>
           </table>
         </div>
       </div>
-    </section>
-
-    <!-- ============ VIEW: PEDIDOS E COMPROVATIVOS ============ -->
-    <section class="view" id="view-requests">
-      <div class="summary-row">
-        <div class="summary-card">
-          <div class="summary-label">Pendentes</div>
-          <div class="summary-value" id="reqPendentes" style="color:var(--warn);">—</div>
-          <div class="summary-note">à espera de validação</div>
-        </div>
-        <div class="summary-card">
-          <div class="summary-label">Aprovados este mês</div>
-          <div class="summary-value" id="reqAprovados" style="color:var(--ok);">—</div>
-          <div class="summary-note">comprovativos validados</div>
-        </div>
-        <div class="summary-card">
-          <div class="summary-label">Rejeitados</div>
-          <div class="summary-value" id="reqRejeitados" style="color:var(--danger);">—</div>
-          <div class="summary-note">comprovativo inválido ou insuficiente</div>
-        </div>
-      </div>
-
-      <div class="panel" id="requestsPanel"></div>
     </section>
 
     <!-- ============ VIEW: CONFIGURAÇÕES ============ -->
@@ -974,23 +1033,25 @@
       <div class="settings-card">
         <div class="settings-card-title">Perfil do Admin Master</div>
         <div class="settings-card-desc">Estes dados identificam-te como super administrador da plataforma.</div>
-        <form onsubmit="return false;">
+        <form action="{{ route('admins.update', Auth::id()) }}" method="POST">
+          @csrf
+          @method('PUT')
           <div class="field-block">
             <label class="field-label">NOME</label>
-            <input class="field-input" id="s-nome" type="text" value="Admin Master">
+            <input class="field-input" id="s-nome" name="name" type="text" value="{{ Auth::user()->name }}">
           </div>
           <div class="field-block">
             <label class="field-label">EMAIL</label>
-            <input class="field-input" id="s-email" type="email" value="master@nguevela.ao">
+            <input class="field-input" id="s-email" name="email" type="email" value="{{ Auth::user()->email }}">
           </div>
           <div class="field-block" style="margin-bottom:0;">
             <label class="field-label">NOVA PALAVRA-PASSE</label>
-            <input class="field-input" id="s-senha" type="password" placeholder="Deixa em branco para manter a atual">
+            <input class="field-input" id="s-senha" name="password" type="password" placeholder="Deixa em branco para manter a atual">
+          </div>
+          <div class="modal-actions" style="margin-top:18px; padding-top:16px;">
+            <button class="btn btn-gold">Guardar alterações</button>
           </div>
         </form>
-        <div class="modal-actions" style="margin-top:18px; padding-top:16px;">
-          <button class="btn btn-gold" onclick="saveSettings()">Guardar alterações</button>
-        </div>
       </div>
 
       <div class="settings-card">
@@ -1035,11 +1096,6 @@
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
       Faturação
     </div>
-    <div class="mobile-nav-item" data-view="requests" onclick="switchView('requests')" style="position:relative;">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      Pedidos
-      <span id="requestsBadgeMobile" style="display:none; position:absolute; top:-2px; right:6px; width:8px; height:8px; border-radius:50%; background:var(--danger);"></span>
-    </div>
     <div class="mobile-nav-item" data-view="settings" onclick="switchView('settings')">
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       Config
@@ -1074,7 +1130,8 @@
       <span class="plan-badge-value">Mensal · 10.000 Kz</span>
     </div>
 
-    <form id="salonForm" onsubmit="return false;">
+    <form id="salonForm" action="{{ route('barbearias.store') }}" method="POST">
+        @csrf
 
       <!-- PASSO 1: EMPRESA + GESTOR -->
       <div class="wizard-step active" id="wizardStep1">
@@ -1083,11 +1140,11 @@
         <div class="form-grid">
           <div class="field-block full">
             <label class="field-label">NOME DA EMPRESA / LOJA</label>
-            <input class="field-input" id="f-nome" type="text" placeholder="Ex: Barbearia Central Luanda" required>
+            <input class="field-input" name="name" type="text" placeholder="Ex: Barbearia Central Luanda" required>
           </div>
           <div class="field-block full">
             <label class="field-label">MUNICÍPIO</label>
-            <input class="field-input" id="f-municipio" type="text" placeholder="Ex: Talatona" required>
+            <input class="field-input" name="municipio" type="text" placeholder="Ex: Talatona" required>
           </div>
         </div>
 
@@ -1095,23 +1152,28 @@
         <div class="form-grid">
           <div class="field-block full">
             <label class="field-label">NOME DO GESTOR</label>
-            <input class="field-input" id="f-dono" type="text" placeholder="Ex: João Neto" required>
+            <input class="field-input" name="gestor" type="text" placeholder="Ex: João Neto" required>
           </div>
           <div class="field-block">
             <label class="field-label">EMAIL DE LOGIN</label>
-            <input class="field-input" id="f-email" type="email" placeholder="gestor@empresa.ao" required>
+            <input class="field-input" name="email" type="email" placeholder="gestor@empresa.ao" required>
           </div>
           <div class="field-block">
             <label class="field-label">TELEFONE</label>
-            <input class="field-input" id="f-telefone" type="text" placeholder="9XX XXX XXX" required>
+            <input class="field-input" name="number" type="text" placeholder="9XX XXX XXX" required>
           </div>
+          
+          {{-- Hidden Admin ID --}}
+          <input type="hidden" name="admin_id" value="{{ Auth::id() }}">
+          <input type="hidden" name="plano" value="10000">
+
           <div class="field-block full">
             <label class="field-label">SENHA DE ACESSO</label>
             <div class="field-with-action">
-              <input class="field-input" id="f-senha" type="text" placeholder="Senha provisória" style="padding-right:112px;" required>
+              <input class="field-input" name="password" type="text" placeholder="Senha provisória" style="padding-right:112px;" required>
               <div class="field-inline-actions">
-                <button type="button" class="field-inline-action" onclick="gerarSenha('f-senha')">Gerar</button>
-                <button type="button" class="field-inline-action" onclick="copiarValor('f-senha')">Copiar</button>
+                <button type="button" class="field-inline-action" onclick="gerarSenha(this)">Gerar</button>
+                <button type="button" class="field-inline-action" onclick="copiarValor(this)">Copiar</button>
               </div>
             </div>
           </div>
@@ -1141,37 +1203,7 @@
 
     <div class="modal-actions" id="wizardActions2" style="display:none;">
       <button class="btn btn-ghost" onclick="goToStep(1)">Voltar</button>
-      <button class="btn btn-gold" onclick="saveSalon()">Ativar empresa</button>
-    </div>
-  </div>
-</div>
-
-<!-- ============ MODAL: CONFIRMAR RENOVAÇÃO ============ -->
-<div class="modal-overlay" id="renewModal">
-  <div class="modal" style="max-width:380px;">
-    <div class="confirm-icon" style="background:var(--ok-soft); color:var(--ok);">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
-    </div>
-    <div class="modal-title" id="renewTitle">Renovar assinatura</div>
-    <div class="modal-desc" id="renewDesc">Isto estende o acesso do salão por mais 30 dias a partir de hoje.</div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('renewModal')">Cancelar</button>
-      <button class="btn btn-gold" onclick="confirmRenew()">Confirmar +30 dias</button>
-    </div>
-  </div>
-</div>
-
-<!-- ============ MODAL: CONFIRMAR SUSPENSÃO ============ -->
-<div class="modal-overlay" id="suspendModal">
-  <div class="modal" style="max-width:380px;">
-    <div class="confirm-icon" style="background:var(--danger-soft); color:var(--danger);">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></svg>
-    </div>
-    <div class="modal-title" id="suspendTitle">Suspender salão</div>
-    <div class="modal-desc" id="suspendDesc">A equipa deste salão perde o acesso imediatamente. Podes reativar a qualquer momento.</div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('suspendModal')">Cancelar</button>
-      <button class="btn btn-danger-ghost" onclick="confirmSuspend()">Sim, suspender</button>
+      <button class="btn btn-gold" onclick="document.getElementById('salonForm').submit()">Ativar empresa</button>
     </div>
   </div>
 </div>
@@ -1189,22 +1221,24 @@
     </div>
     <div class="modal-desc" id="detailStatusLine">—</div>
 
-    <form onsubmit="return false;">
+    <form id="editSalonForm" method="POST">
+        @csrf
+        @method('PUT')
 
       <div class="section-label">Empresa</div>
       <div class="form-grid">
         <div class="field-block full">
           <label class="field-label">NOME DA EMPRESA / LOJA</label>
-          <input class="field-input" id="d-nome" type="text">
+          <input class="field-input" id="d-nome" name="name" type="text">
         </div>
         <div class="field-block">
           <label class="field-label">MUNICÍPIO</label>
-          <input class="field-input" id="d-municipio" type="text">
+          <input class="field-input" id="d-municipio" name="municipio" type="text">
         </div>
         <div class="field-block">
           <label class="field-label">PLANO</label>
-          <select class="field-select" id="d-plano">
-            <option value="Mensal">Mensal · 10.000 Kz</option>
+          <select class="field-select" id="d-plano" name="plano">
+            <option value="10000">Mensal · 10.000 Kz</option>
           </select>
         </div>
       </div>
@@ -1213,46 +1247,36 @@
       <div class="form-grid">
         <div class="field-block full">
           <label class="field-label">NOME DO GESTOR</label>
-          <input class="field-input" id="d-dono" type="text">
+          <input class="field-input" id="d-dono" name="gestor" type="text">
         </div>
         <div class="field-block">
           <label class="field-label">EMAIL DE LOGIN</label>
-          <input class="field-input" id="d-email" type="email">
+          <input class="field-input" id="d-email" name="email" type="email">
         </div>
         <div class="field-block">
           <label class="field-label">TELEFONE</label>
-          <input class="field-input" id="d-telefone" type="text">
+          <input class="field-input" id="d-telefone" name="number" type="text">
         </div>
         <div class="field-block full">
           <label class="field-label">SENHA DE ACESSO</label>
           <div class="field-with-action">
-            <input class="field-input" id="d-senha" type="text" placeholder="Senha de acesso" style="padding-right:112px;">
+            <input class="field-input" id="d-senha" name="password" type="text" placeholder="Senha de acesso" style="padding-right:112px;">
             <div class="field-inline-actions">
-              <button type="button" class="field-inline-action" onclick="gerarSenha('d-senha')">Gerar</button>
-              <button type="button" class="field-inline-action" onclick="copiarValor('d-senha')">Copiar</button>
+              <button type="button" class="field-inline-action" onclick="gerarSenha(this)">Gerar</button>
+              <button type="button" class="field-inline-action" onclick="copiarValor(this)">Copiar</button>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="section-label" style="margin-top:6px;">Equipa</div>
-      <div id="d-funcionarioEmpty" class="funcionario-empty">
-        Ainda sem funcionários com login individual registado.
+      <div class="modal-actions" style="justify-content:space-between;">
+        <button type="button" class="btn btn-danger-ghost" id="detailSuspendBtn" onclick="toggleActiveStatus()">Suspender</button>
+        <div style="display:flex; gap:10px;">
+          <button type="button" class="btn btn-ghost" onclick="closeModal('detailModal')">Fechar</button>
+          <button type="submit" class="btn btn-gold">Guardar</button>
+        </div>
       </div>
-      <div class="funcionario-list" id="d-funcionarioList"></div>
-      <button type="button" class="add-funcionario-btn" onclick="addFuncionarioRow('detail')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-        Adicionar funcionário
-      </button>
     </form>
-
-    <div class="modal-actions" style="justify-content:space-between;">
-      <button class="btn btn-danger-ghost" id="detailSuspendBtn" onclick="detailSuspendToggle()">Suspender</button>
-      <div style="display:flex; gap:10px;">
-        <button class="btn btn-ghost" onclick="closeModal('detailModal')">Fechar</button>
-        <button class="btn btn-gold" onclick="saveDetail()">Guardar</button>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -1262,393 +1286,28 @@
 </div>
 
 <script>
-  // ---------- DADOS DE EXEMPLO (substituir por chamadas à API / Supabase) ----------
-  const PLAN_PRICES = { "Mensal": 10000 };
-
-  let salons = [
-    { id: 1, nome: "Barbearia Real Luanda", dono: "Kiluanje Sami", municipio: "Ingombota", plano: "Mensal", expira: addDays(-3), equipa: 4, status: "suspenso" },
-    { id: 2, nome: "Elegance Hair Studio", dono: "Marta Cabinda", municipio: "Talatona", plano: "Mensal", expira: addDays(2), equipa: 9, status: "ativo" },
-    { id: 3, nome: "Corte Fino Barbershop", dono: "Edson Paulo", municipio: "Viana", plano: "Mensal", expira: addDays(21), equipa: 2, status: "ativo" },
-    { id: 4, nome: "Golden Fade Barbers", dono: "Nelson Kiala", municipio: "Talatona", plano: "Mensal", expira: addDays(4), equipa: 5, status: "ativo" },
-    { id: 5, nome: "Beauty House Benfica", dono: "Rosa Manuel", municipio: "Benfica", plano: "Mensal", expira: addDays(30), equipa: 6, status: "ativo" },
-  ];
-
   let currentFilter = "todos";
-  let pendingActionId = null;
-
-  function addDays(n){
-    const d = new Date();
-    d.setDate(d.getDate() + n);
-    return d;
-  }
-
-  function formatDate(d){
-    return d.toLocaleDateString('pt-AO', { day:'2-digit', month:'short', year:'numeric' });
-  }
-
-  function daysUntil(d){
-    const diff = Math.ceil((d - new Date()) / (1000*60*60*24));
-    return diff;
-  }
-
-  function computeStatus(salon){
-    if(salon.status === 'suspenso') return 'suspenso';
-    const dias = daysUntil(salon.expira);
-    if(dias < 0) return 'suspenso';
-    if(dias <= 5) return 'expirar';
-    return 'ativo';
-  }
-
-  function initials(name){
-    return name.split(' ').filter(Boolean).slice(0,2).map(w => w[0]).join('').toUpperCase();
-  }
 
   function setFilter(f){
     currentFilter = f;
     document.querySelectorAll('.filter-chip').forEach(c => c.classList.toggle('active', c.dataset.filter === f));
-    renderTable();
+    filterTable();
   }
 
-  function renderKpis(){
-    const total = salons.length;
-    const ativos = salons.filter(s => computeStatus(s) === 'ativo').length;
-    const expirar = salons.filter(s => computeStatus(s) === 'expirar').length;
-    const receita = salons.filter(s => computeStatus(s) !== 'suspenso').reduce((sum, s) => sum + PLAN_PRICES[s.plano], 0);
-
-    document.getElementById('kpiTotal').textContent = total;
-    document.getElementById('kpiAtivos').textContent = ativos;
-    document.getElementById('kpiAtivosPct').textContent = total ? Math.round((ativos/total)*100) + '% da base' : '—';
-    document.getElementById('kpiExpirar').textContent = expirar;
-    document.getElementById('kpiReceita').textContent = receita.toLocaleString('pt-AO') + ' Kz';
-  }
-
-  function renderTable(){
-    const body = document.getElementById('salonsBody');
-    const empty = document.getElementById('emptyState');
+  function filterTable(){
     const term = document.getElementById('searchInput').value.trim().toLowerCase();
+    const rows = document.querySelectorAll('.salon-row');
+    
+    rows.forEach(row => {
+        const name = row.dataset.name || '';
+        const owner = row.dataset.owner || '';
+        const status = row.dataset.status || '';
+        
+        const matchesTerm = !term || name.includes(term) || owner.includes(term);
+        const matchesFilter = currentFilter === 'todos' || status === currentFilter;
 
-    let list = salons.filter(s => {
-      const matchesTerm = !term || s.nome.toLowerCase().includes(term) || s.dono.toLowerCase().includes(term);
-      const st = computeStatus(s);
-      const matchesFilter = currentFilter === 'todos' || st === currentFilter;
-      return matchesTerm && matchesFilter;
+        row.style.display = (matchesTerm && matchesFilter) ? '' : 'none';
     });
-
-    body.innerHTML = '';
-
-    if(list.length === 0){
-      empty.style.display = 'block';
-      renderKpis();
-      return;
-    }
-    empty.style.display = 'none';
-
-    list.forEach(s => {
-      const st = computeStatus(s);
-      const dias = daysUntil(s.expira);
-      const tr = document.createElement('tr');
-
-      let badgeClass = 'ativo', badgeText = 'Ativo';
-      if(st === 'expirar'){ badgeClass = 'expirar'; badgeText = `Expira em ${dias}d`; }
-      if(st === 'suspenso'){ badgeClass = 'suspenso'; badgeText = dias < 0 ? 'Expirado' : 'Suspenso'; }
-
-      tr.innerHTML = `
-        <td class="cell-salon">
-          <div class="salon-cell">
-            <div class="salon-logo">${initials(s.nome)}</div>
-            <div>
-              <div class="salon-name">${s.nome}</div>
-              <div class="salon-owner">${s.dono} · ${s.municipio}</div>
-            </div>
-          </div>
-        </td>
-        <td data-label="Plano"><span class="plan-tag">${s.plano} · ${PLAN_PRICES[s.plano].toLocaleString('pt-AO')} Kz</span></td>
-        <td data-label="Expira em">${formatDate(s.expira)}</td>
-        <td data-label="Status"><span class="status-badge ${badgeClass}"><span class="status-dot"></span>${badgeText}</span></td>
-        <td data-label="Equipa">${s.equipa} ${s.equipa === 1 ? 'pessoa' : 'pessoas'}</td>
-        <td class="cell-actions">
-          <div class="row-actions">
-            <button class="icon-btn" title="Renovar 30 dias" onclick="askRenew(${s.id})">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
-            </button>
-            ${st === 'suspenso'
-              ? `<button class="icon-btn" title="Reativar" onclick="reactivate(${s.id})">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                 </button>`
-              : `<button class="icon-btn danger" title="Suspender" onclick="askSuspend(${s.id})">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></svg>
-                 </button>`
-            }
-            <button class="icon-btn" title="Ver detalhes" onclick="openDetail(${s.id})">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-            </button>
-          </div>
-        </td>
-      `;
-      body.appendChild(tr);
-    });
-
-    renderKpis();
-  }
-
-  // ---------- MODAIS ----------
-  const funcionarioStore = { wizard: [], detail: [] };
-  let funcionarioSeq = 0;
-
-  function openCreateModal(){
-    document.getElementById('salonModalTitle').textContent = 'Nova empresa';
-    document.getElementById('salonForm').reset();
-    funcionarioStore.wizard = [];
-    renderFuncionarios('wizard');
-    goToStep(1);
-    document.getElementById('salonModal').classList.add('open');
-  }
-
-  function goToStep(step){
-    document.querySelectorAll('.wizard-step').forEach(s => s.classList.remove('active'));
-
-    if(step === 2){
-      // valida passo 1 antes de avançar
-      const nome = document.getElementById('f-nome').value.trim();
-      const municipio = document.getElementById('f-municipio').value.trim();
-      const dono = document.getElementById('f-dono').value.trim();
-      const email = document.getElementById('f-email').value.trim();
-      const telefone = document.getElementById('f-telefone').value.trim();
-      const senha = document.getElementById('f-senha').value.trim();
-      if(!nome || !municipio || !dono || !email || !telefone || !senha){
-        showToast('Preenche os dados da empresa e do gestor antes de continuar.');
-        return;
-      }
-      if(!isValidEmail(email)){
-        showToast('Introduz um email de login válido para o gestor.');
-        return;
-      }
-    }
-
-    document.getElementById('wizardStep' + step).classList.add('active');
-    document.getElementById('dot-1').classList.toggle('done', step > 1);
-    document.getElementById('dot-1').classList.toggle('current', step === 1);
-    document.getElementById('dot-2').classList.toggle('current', step === 2);
-    document.getElementById('stepLabel').textContent = step === 1
-      ? 'Passo 1 de 2 · Empresa e gestor'
-      : 'Passo 2 de 2 · Equipa (opcional)';
-    document.getElementById('wizardActions1').style.display = step === 1 ? 'flex' : 'none';
-    document.getElementById('wizardActions2').style.display = step === 2 ? 'flex' : 'none';
-  }
-
-  function gerarSenhaValor(){
-    const letras = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // sem I/O, evita confusão ao ler em voz alta
-    const l1 = letras[Math.floor(Math.random() * letras.length)];
-    const l2 = letras[Math.floor(Math.random() * letras.length)];
-    const num = Math.floor(1000 + Math.random() * 9000);
-    return 'Ng' + l1 + l2 + num;
-  }
-
-  function gerarSenha(inputId){
-    document.getElementById(inputId).value = gerarSenhaValor();
-  }
-
-  function copyText(text){
-    if(!text){ return; }
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(text).then(
-        () => showToast('Senha copiada para a área de transferência.'),
-        () => fallbackCopy(text)
-      );
-    } else {
-      fallbackCopy(text);
-    }
-  }
-
-  function fallbackCopy(text){
-    try{
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-      showToast('Senha copiada para a área de transferência.');
-    } catch(e){
-      showToast('Não foi possível copiar automaticamente. Copia manualmente.');
-    }
-  }
-
-  function copiarValor(inputId){
-    copyText(document.getElementById(inputId).value.trim());
-  }
-
-  function copiarSenhaFuncionario(scope, rowId){
-    const f = funcionarioStore[scope].find(x => x.rowId === rowId);
-    if(f) copyText(f.senha);
-  }
-
-  function isValidEmail(v){
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-  }
-
-  function escAttr(str){
-    return String(str == null ? '' : str)
-      .replace(/&/g, '&amp;')
-      .replace(/"/g, '&quot;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-  }
-
-  function addFuncionarioRow(scope){
-    funcionarioSeq++;
-    funcionarioStore[scope].push({ rowId: funcionarioSeq, nome: '', email: '', senha: gerarSenhaValor() });
-    renderFuncionarios(scope);
-  }
-
-  function removeFuncionarioRow(scope, rowId){
-    funcionarioStore[scope] = funcionarioStore[scope].filter(f => f.rowId !== rowId);
-    renderFuncionarios(scope);
-  }
-
-  function updateFuncionarioField(scope, rowId, field, value){
-    const f = funcionarioStore[scope].find(x => x.rowId === rowId);
-    if(f) f[field] = value;
-  }
-
-  function gerarSenhaFuncionario(scope, rowId){
-    const f = funcionarioStore[scope].find(x => x.rowId === rowId);
-    if(!f) return;
-    f.senha = gerarSenhaValor();
-    renderFuncionarios(scope);
-  }
-
-  function renderFuncionarios(scope){
-    const listId = scope === 'wizard' ? 'funcionarioList' : 'd-funcionarioList';
-    const emptyId = scope === 'wizard' ? 'funcionarioEmpty' : 'd-funcionarioEmpty';
-    const list = document.getElementById(listId);
-    const empty = document.getElementById(emptyId);
-    const arr = funcionarioStore[scope];
-    list.innerHTML = '';
-
-    if(arr.length === 0){
-      empty.style.display = 'block';
-      return;
-    }
-    empty.style.display = 'none';
-
-    arr.forEach(f => {
-      const row = document.createElement('div');
-      row.className = 'funcionario-row';
-      row.innerHTML = `
-        <div class="funcionario-row-top">
-          <input class="field-input" placeholder="Nome do funcionário" value="${escAttr(f.nome)}" oninput="updateFuncionarioField('${scope}',${f.rowId},'nome',this.value)">
-          <input class="field-input" placeholder="Email de login" value="${escAttr(f.email)}" oninput="updateFuncionarioField('${scope}',${f.rowId},'email',this.value)">
-        </div>
-        <div class="funcionario-row-bottom">
-          <div class="field-with-action">
-            <input class="field-input" placeholder="Senha" value="${escAttr(f.senha)}" style="padding-right:104px;" oninput="updateFuncionarioField('${scope}',${f.rowId},'senha',this.value)">
-            <div class="field-inline-actions">
-              <button type="button" class="field-inline-action" onclick="gerarSenhaFuncionario('${scope}',${f.rowId})">Gerar</button>
-              <button type="button" class="field-inline-action" onclick="copiarSenhaFuncionario('${scope}',${f.rowId})">Copiar</button>
-            </div>
-          </div>
-          <button type="button" class="funcionario-remove" title="Remover" onclick="removeFuncionarioRow('${scope}',${f.rowId})">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-          </button>
-        </div>
-      `;
-      list.appendChild(row);
-    });
-  }
-
-  function closeModal(id){
-    document.getElementById(id).classList.remove('open');
-    pendingActionId = null;
-  }
-
-  function saveSalon(){
-    const nome = document.getElementById('f-nome').value.trim();
-    const dono = document.getElementById('f-dono').value.trim();
-    const email = document.getElementById('f-email').value.trim();
-    const telefone = document.getElementById('f-telefone').value.trim();
-    const municipio = document.getElementById('f-municipio').value.trim();
-    const senha = document.getElementById('f-senha').value.trim();
-    const plano = 'Mensal';
-
-    if(!nome || !dono || !email || !telefone || !municipio || !senha){
-      showToast('Preenche todos os campos antes de continuar.');
-      goToStep(1);
-      return;
-    }
-    if(!isValidEmail(email)){
-      showToast('Introduz um email de login válido para o gestor.');
-      goToStep(1);
-      return;
-    }
-
-    // ignora linhas de funcionário deixadas em branco
-    const funcionarios = funcionarioStore.wizard
-      .filter(f => f.nome.trim() && f.email.trim())
-      .map(f => ({ nome: f.nome.trim(), email: f.email.trim(), senha: (f.senha || '').trim() || gerarSenhaValor() }));
-
-    const newSalon = {
-      id: Date.now(),
-      nome, dono, municipio, plano,
-      email, telefone,
-      gestor: { nome: dono, email, telefone, senha },
-      funcionarios,
-      expira: addDays(30),
-      equipa: 1 + funcionarios.length,
-      status: 'ativo'
-    };
-    salons.unshift(newSalon);
-    closeModal('salonModal');
-    setFilter('todos');
-    const equipaMsg = funcionarios.length
-      ? ` com ${funcionarios.length} funcionário(s) já registados`
-      : '';
-    showToast(`${nome} foi ativado com 30 dias de acesso${equipaMsg}.`);
-  }
-
-  function askRenew(id){
-    pendingActionId = id;
-    const s = salons.find(x => x.id === id);
-    document.getElementById('renewDesc').textContent = `${s.nome} vai ficar ativo por mais 30 dias, até ${formatDate(addDays(30))}.`;
-    document.getElementById('renewModal').classList.add('open');
-  }
-
-  function confirmRenew(){
-    const s = salons.find(x => x.id === pendingActionId);
-    if(s){
-      s.expira = addDays(30);
-      s.status = 'ativo';
-    }
-    closeModal('renewModal');
-    renderTable();
-    showToast(`Mensalidade de ${s.nome} renovada por mais 30 dias.`);
-  }
-
-  function askSuspend(id){
-    pendingActionId = id;
-    const s = salons.find(x => x.id === id);
-    document.getElementById('suspendDesc').textContent = `A equipa de ${s.nome} vai perder o acesso à plataforma imediatamente.`;
-    document.getElementById('suspendModal').classList.add('open');
-  }
-
-  function confirmSuspend(){
-    const s = salons.find(x => x.id === pendingActionId);
-    if(s) s.status = 'suspenso';
-    closeModal('suspendModal');
-    renderTable();
-    showToast(`${s.nome} foi suspenso.`);
-  }
-
-  function reactivate(id){
-    const s = salons.find(x => x.id === id);
-    if(s){
-      s.status = 'ativo';
-      if(daysUntil(s.expira) < 0) s.expira = addDays(30);
-    }
-    renderTable();
-    showToast(`${s.nome} foi reativado.`);
   }
 
   // ============================================================
@@ -1657,7 +1316,6 @@
   const VIEW_META = {
     overview: { title: 'Salões registados', sub: 'Gere todos os estabelecimentos, mensalidades e acessos da plataforma.', showTopbarActions: true },
     billing:  { title: 'Faturação SaaS', sub: 'Acompanha a receita recorrente e o estado de pagamento de cada salão.', showTopbarActions: false },
-    requests: { title: 'Pedidos e comprovativos', sub: 'Valida os comprovativos de pagamento enviados pelos donos dos salões.', showTopbarActions: false },
     settings: { title: 'Configurações', sub: 'Dados da tua conta de Admin Master e preferências de notificação.', showTopbarActions: false },
   };
 
@@ -1674,324 +1332,181 @@
     document.getElementById('pageSub').textContent = meta.sub;
     document.getElementById('topbarActions').style.display = meta.showTopbarActions ? 'flex' : 'none';
 
-    if(view === 'billing') renderBilling();
-    if(view === 'requests') renderRequests();
-
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   // ============================================================
-  // PEDIDOS E COMPROVATIVOS
+  // MODAIS & HELPERS
   // ============================================================
-  let requests = [
-    { id: 101, salaoNome: "Vibe Cuts Barbershop", dono: "Paulo Sema", plano: "Mensal", valor: 10000, data: addDays(-1), status: "pendente" },
-    { id: 102, salaoNome: "Barbearia Real Luanda", dono: "Kiluanje Sami", plano: "Mensal", valor: 10000, data: addDays(0), status: "pendente", salaoId: 1 },
-    { id: 103, salaoNome: "Studio Nzinga", dono: "Amélia Vunge", plano: "Mensal", valor: 10000, data: addDays(-2), status: "pendente" },
-    { id: 104, salaoNome: "Elegance Hair Studio", dono: "Marta Cabinda", plano: "Mensal", valor: 10000, data: addDays(-6), status: "aprovado", salaoId: 2 },
-    { id: 105, salaoNome: "Fade Kings", dono: "Rui Fortunato", plano: "Mensal", valor: 10000, data: addDays(-8), status: "rejeitado" },
-  ];
-
-  function updateRequestsBadge(){
-    const pendentes = requests.filter(r => r.status === 'pendente').length;
-    const badge = document.getElementById('requestsBadge');
-    const badgeMobile = document.getElementById('requestsBadgeMobile');
-    if(pendentes > 0){
-      badge.textContent = pendentes;
-      badge.style.display = 'inline-block';
-      badgeMobile.style.display = 'block';
-    } else {
-      badge.style.display = 'none';
-      badgeMobile.style.display = 'none';
-    }
+  
+  function openCreateModal(){
+    document.getElementById('salonForm').reset();
+    document.getElementById('salonModal').classList.add('open');
+    goToStep(1);
   }
 
-  function renderRequests(){
-    const panel = document.getElementById('requestsPanel');
-    panel.innerHTML = '';
+  function closeModal(id){
+    document.getElementById(id).classList.remove('open');
+  }
 
-    document.getElementById('reqPendentes').textContent = requests.filter(r => r.status === 'pendente').length;
-    document.getElementById('reqAprovados').textContent = requests.filter(r => r.status === 'aprovado').length;
-    document.getElementById('reqRejeitados').textContent = requests.filter(r => r.status === 'rejeitado').length;
-
-    if(requests.length === 0){
-      panel.innerHTML = `<div class="empty-state">
-        <div class="empty-state-title">Sem pedidos por agora</div>
-        <div>Quando um salão enviar um comprovativo, aparece aqui.</div>
-      </div>`;
-      return;
+  function goToStep(step){
+    // Validação simples do passo 1
+    if(step === 2){
+      const nome = document.querySelector('#wizardStep1 input[name="name"]').value;
+      const email = document.querySelector('#wizardStep1 input[name="email"]').value;
+      if(!nome || !email) {
+          showToast('Preencha os dados da empresa e gestor.');
+          return;
+      }
     }
 
-    // pendentes primeiro
-    const ordered = [...requests].sort((a,b) => (a.status === 'pendente' ? -1 : 1) - (b.status === 'pendente' ? -1 : 1));
+    document.querySelectorAll('.wizard-step').forEach(s => s.classList.remove('active'));
+    document.getElementById('wizardStep' + step).classList.add('active');
+    
+    document.getElementById('dot-1').classList.toggle('done', step > 1);
+    document.getElementById('dot-1').classList.toggle('current', step === 1);
+    document.getElementById('dot-2').classList.toggle('current', step === 2);
+    
+    document.getElementById('stepLabel').textContent = step === 1
+      ? 'Passo 1 de 2 · Empresa e gestor'
+      : 'Passo 2 de 2 · Equipa (opcional)';
+      
+    document.getElementById('wizardActions1').style.display = step === 1 ? 'flex' : 'none';
+    document.getElementById('wizardActions2').style.display = step === 2 ? 'flex' : 'none';
+  }
 
-    ordered.forEach(r => {
-      const card = document.createElement('div');
-      card.className = 'request-card';
+  function gerarSenha(btn) {
+      const input = btn.parentElement.previousElementSibling;
+      const letras = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+      const l1 = letras[Math.floor(Math.random() * letras.length)];
+      const l2 = letras[Math.floor(Math.random() * letras.length)];
+      const num = Math.floor(1000 + Math.random() * 9000);
+      input.value = 'Ng' + l1 + l2 + num;
+  }
 
-      let statusHtml = '';
-      let actionsHtml = '';
-      if(r.status === 'pendente'){
-        statusHtml = `<span class="request-status" style="background:var(--warn-soft); color:var(--warn);"><span class="status-dot"></span>Pendente</span>`;
-        actionsHtml = `
-          <button class="btn btn-sm btn-ghost" onclick="rejectRequest(${r.id})">Rejeitar</button>
-          <button class="btn btn-sm btn-gold" onclick="approveRequest(${r.id})">Aprovar</button>`;
-      } else if(r.status === 'aprovado'){
-        statusHtml = `<span class="request-status" style="background:var(--ok-soft); color:var(--ok);"><span class="status-dot"></span>Aprovado</span>`;
+  function copiarValor(btn) {
+      const input = btn.parentElement.previousElementSibling;
+      input.select();
+      document.execCommand('copy');
+      showToast('Copiado!');
+  }
+
+  // Funcionários (UI Only for now)
+  const funcionarioStore = { wizard: [] };
+  let funcionarioSeq = 0;
+
+  function addFuncionarioRow(scope){
+    funcionarioSeq++;
+    const list = document.getElementById('funcionarioList');
+    const empty = document.getElementById('funcionarioEmpty');
+    empty.style.display = 'none';
+    
+    const row = document.createElement('div');
+    row.className = 'funcionario-row';
+    row.innerHTML = `
+        <div class="funcionario-row-top">
+          <input class="field-input" placeholder="Nome do funcionário">
+          <input class="field-input" placeholder="Email de login">
+        </div>
+        <div class="funcionario-row-bottom">
+          <div class="field-with-action">
+            <input class="field-input" placeholder="Senha" style="padding-right:104px;">
+            <div class="field-inline-actions">
+              <button type="button" class="field-inline-action" onclick="gerarSenha(this)">Gerar</button>
+            </div>
+          </div>
+          <button type="button" class="funcionario-remove" title="Remover" onclick="this.closest('.funcionario-row').remove()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+    `;
+    list.appendChild(row);
+  }
+
+  // Preencher Modal de Edição com dados JSON
+  function openDetailModal(barbearia) {
+      const form = document.getElementById('editSalonForm');
+      form.action = `/barbearias/${barbearia.id}`; // Rota dinâmica
+      
+      document.getElementById('detailTitle').textContent = barbearia.name;
+      
+      // Preencher campos
+      document.getElementById('d-nome').value = barbearia.name;
+      document.getElementById('d-municipio').value = barbearia.municipio;
+      document.getElementById('d-plano').value = barbearia.plano;
+      document.getElementById('d-dono').value = barbearia.gestor;
+      document.getElementById('d-email').value = barbearia.email;
+      document.getElementById('d-telefone').value = barbearia.number;
+
+      // Configurar botão de suspender/reativar
+      const suspendBtn = document.getElementById('detailSuspendBtn');
+      // Input hidden para controlar isactive no update
+      if (!form.querySelector('input[name="isactive"]')) {
+          const hiddenInput = document.createElement('input');
+          hiddenInput.type = 'hidden';
+          hiddenInput.name = 'isactive';
+          hiddenInput.id = 'd-isactive';
+          form.appendChild(hiddenInput);
+      }
+      
+      const isActive = barbearia.isactive;
+      document.getElementById('d-isactive').value = isActive ? 1 : 0;
+
+      if(isActive) {
+          suspendBtn.textContent = 'Suspender';
+          suspendBtn.className = 'btn btn-danger-ghost';
+          suspendBtn.onclick = () => toggleActiveStatus(false);
       } else {
-        statusHtml = `<span class="request-status" style="background:var(--danger-soft); color:var(--danger);"><span class="status-dot"></span>Rejeitado</span>`;
+          suspendBtn.textContent = 'Reativar';
+          suspendBtn.className = 'btn btn-gold';
+          suspendBtn.onclick = () => toggleActiveStatus(true);
       }
 
-      card.innerHTML = `
-        <div class="request-main">
-          <div class="request-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          </div>
-          <div style="min-width:0;">
-            <div class="request-title">${r.salaoNome}</div>
-            <div class="request-sub">${r.dono} · plano ${r.plano} · enviado a ${formatDate(r.data)}</div>
-          </div>
-        </div>
-        <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
-          <div class="request-value">${r.valor.toLocaleString('pt-AO')} Kz</div>
-          ${statusHtml}
-          <div class="request-actions">${actionsHtml}</div>
-        </div>
-      `;
-      panel.appendChild(card);
-    });
-
-    updateRequestsBadge();
+      document.getElementById('detailModal').classList.add('open');
   }
 
-  function approveRequest(id){
-    const r = requests.find(x => x.id === id);
-    if(!r) return;
-    r.status = 'aprovado';
-
-    // se já existe salão associado, renova; senão, ativa como novo salão
-    let salon = r.salaoId ? salons.find(s => s.id === r.salaoId) : salons.find(s => s.nome === r.salaoNome);
-    let isNew = false;
-    if(salon){
-      salon.expira = addDays(30);
-      salon.status = 'ativo';
-    } else {
-      isNew = true;
-      salon = {
-        id: Date.now(),
-        nome: r.salaoNome,
-        dono: r.dono,
-        municipio: '—',
-        plano: r.plano,
-        expira: addDays(30),
-        equipa: 1,
-        status: 'ativo'
-      };
-      salons.unshift(salon);
-      r.salaoId = salon.id;
-    }
-
-    renderRequests();
-    renderTable();
-    const msg = isNew
-      ? `Comprovativo de ${r.salaoNome} aprovado. Falta definir o login do gestor nos detalhes do salão.`
-      : `Comprovativo de ${r.salaoNome} aprovado. Acesso liberado por 30 dias.`;
-    showToast(msg);
+  function toggleActiveStatus(forceValue = null) {
+      const input = document.getElementById('d-isactive');
+      if (forceValue !== null) {
+          input.value = forceValue ? 1 : 0;
+      } else {
+          input.value = input.value == 1 ? 0 : 1;
+      }
+      
+      // Atualizar visualmente o botão e submeter
+      const btn = document.getElementById('detailSuspendBtn');
+      if(input.value == 1) {
+          btn.textContent = 'Suspender';
+          btn.className = 'btn btn-danger-ghost';
+      } else {
+          btn.textContent = 'Reativar';
+          btn.className = 'btn btn-gold';
+      }
+      
+      // Submeter formulário automaticamente para salvar a mudança de status
+      document.getElementById('editSalonForm').submit();
   }
 
-  function rejectRequest(id){
-    const r = requests.find(x => x.id === id);
-    if(!r) return;
-    r.status = 'rejeitado';
-    renderRequests();
-    showToast(`Comprovativo de ${r.salaoNome} rejeitado.`);
-  }
-
-  // ============================================================
-  // FATURAÇÃO SAAS
-  // ============================================================
-  function renderBilling(){
-    const ativos = salons.filter(s => computeStatus(s) !== 'suspenso');
-    const suspensos = salons.filter(s => computeStatus(s) === 'suspenso');
-
-    const mrr = ativos.reduce((sum, s) => sum + PLAN_PRICES[s.plano], 0);
-    const overdueValue = suspensos.reduce((sum, s) => sum + PLAN_PRICES[s.plano], 0);
-    const avg = ativos.length ? Math.round(mrr / ativos.length) : 0;
-
-    document.getElementById('billingMRR').textContent = mrr.toLocaleString('pt-AO') + ' Kz';
-    document.getElementById('billingOverdue').textContent = suspensos.length;
-    document.getElementById('billingOverdueValue').textContent = overdueValue.toLocaleString('pt-AO') + ' Kz em risco';
-    document.getElementById('billingAvg').textContent = avg.toLocaleString('pt-AO') + ' Kz';
-
-    // por plano
-    const planBody = document.getElementById('billingPlanBody');
-    planBody.innerHTML = '';
-    Object.keys(PLAN_PRICES).forEach(plano => {
-      const count = ativos.filter(s => s.plano === plano).length;
-      const receita = count * PLAN_PRICES[plano];
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td data-label="Plano"><strong>${plano}</strong></td>
-        <td data-label="Preço">${PLAN_PRICES[plano].toLocaleString('pt-AO')} Kz</td>
-        <td data-label="Salões ativos">${count}</td>
-        <td data-label="Receita do plano">${receita.toLocaleString('pt-AO')} Kz</td>
-      `;
-      planBody.appendChild(tr);
-    });
-
-    // por salão
-    const salonBody = document.getElementById('billingSalonBody');
-    salonBody.innerHTML = '';
-    salons.forEach(s => {
-      const st = computeStatus(s);
-      let badgeClass = 'ativo', badgeText = 'Em dia';
-      if(st === 'expirar') { badgeClass = 'expirar'; badgeText = `Vence em ${daysUntil(s.expira)}d`; }
-      if(st === 'suspenso') { badgeClass = 'suspenso'; badgeText = 'Em atraso'; }
-
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td data-label="Salão">${s.nome}</td>
-        <td data-label="Plano">${s.plano}</td>
-        <td data-label="Valor">${PLAN_PRICES[s.plano].toLocaleString('pt-AO')} Kz</td>
-        <td data-label="Próxima cobrança">${formatDate(s.expira)}</td>
-        <td data-label="Estado"><span class="status-badge ${badgeClass}"><span class="status-dot"></span>${badgeText}</span></td>
-      `;
-      salonBody.appendChild(tr);
-    });
-  }
-
-  // ============================================================
-  // CONFIGURAÇÕES
-  // ============================================================
-  function saveSettings(){
-    const nome = document.getElementById('s-nome').value.trim();
-    const email = document.getElementById('s-email').value.trim();
-    if(!nome || !email){
-      showToast('Preenche nome e email antes de guardar.');
-      return;
-    }
-    document.querySelector('.admin-name').textContent = nome;
-    document.querySelector('.admin-email').textContent = email;
-    document.getElementById('s-senha').value = '';
-    showToast('Dados do Admin Master atualizados.');
-  }
-
-  // ============================================================
-  // MODAL DE DETALHES / EDIÇÃO DO SALÃO
-  // ============================================================
-  let detailSalonId = null;
-
-  function openDetail(id){
-    const s = salons.find(x => x.id === id);
-    if(!s) return;
-    detailSalonId = id;
-
-    document.getElementById('detailTitle').textContent = s.nome;
-    const st = computeStatus(s);
-    const dias = daysUntil(s.expira);
-    let statusLine = st === 'ativo' ? `Ativo · expira a ${formatDate(s.expira)}`
-                    : st === 'expirar' ? `A expirar em ${dias} dia(s) · ${formatDate(s.expira)}`
-                    : `Suspenso desde ${formatDate(s.expira)}`;
-    document.getElementById('detailStatusLine').textContent = statusLine;
-
-    document.getElementById('d-nome').value = s.nome;
-    document.getElementById('d-dono').value = s.gestor ? s.gestor.nome : s.dono;
-    document.getElementById('d-municipio').value = s.municipio;
-    document.getElementById('d-plano').value = s.plano;
-    document.getElementById('d-email').value = s.gestor ? s.gestor.email : (s.email || '');
-    document.getElementById('d-telefone').value = s.gestor ? s.gestor.telefone : (s.telefone || '');
-    document.getElementById('d-senha').value = s.gestor ? s.gestor.senha : '';
-
-    // carrega a equipa existente (salões antigos sem estrutura ficam com lista vazia, prontos a preencher)
-    funcionarioStore.detail = (s.funcionarios || []).map(f => {
-      funcionarioSeq++;
-      return { rowId: funcionarioSeq, nome: f.nome, email: f.email, senha: f.senha };
-    });
-    renderFuncionarios('detail');
-
-    const suspendBtn = document.getElementById('detailSuspendBtn');
-    if(s.status === 'suspenso'){
-      suspendBtn.textContent = 'Reativar salão';
-      suspendBtn.className = 'btn btn-gold';
-    } else {
-      suspendBtn.textContent = 'Suspender';
-      suspendBtn.className = 'btn btn-danger-ghost';
-    }
-
-    document.getElementById('detailModal').classList.add('open');
-  }
-
-  function saveDetail(){
-    const s = salons.find(x => x.id === detailSalonId);
-    if(!s) return;
-
-    const nome = document.getElementById('d-nome').value.trim();
-    const dono = document.getElementById('d-dono').value.trim();
-    const municipio = document.getElementById('d-municipio').value.trim();
-    const plano = document.getElementById('d-plano').value;
-    const email = document.getElementById('d-email').value.trim();
-    const telefone = document.getElementById('d-telefone').value.trim();
-    const senha = document.getElementById('d-senha').value.trim();
-
-    if(!nome || !dono || !municipio || !email || !telefone || !senha){
-      showToast('Preenche os dados da empresa e do gestor antes de guardar.');
-      return;
-    }
-    if(!isValidEmail(email)){
-      showToast('Introduz um email de login válido para o gestor.');
-      return;
-    }
-
-    const funcionarios = funcionarioStore.detail
-      .filter(f => f.nome.trim() && f.email.trim())
-      .map(f => ({ nome: f.nome.trim(), email: f.email.trim(), senha: (f.senha || '').trim() || gerarSenhaValor() }));
-
-    s.nome = nome;
-    s.dono = dono;
-    s.municipio = municipio;
-    s.plano = plano;
-    s.gestor = { nome: dono, email, telefone, senha };
-    s.funcionarios = funcionarios;
-    s.equipa = 1 + funcionarios.length;
-
-    closeModal('detailModal');
-    renderTable();
-    showToast(`Dados de ${nome} atualizados.`);
-  }
-
-  function detailSuspendToggle(){
-    const s = salons.find(x => x.id === detailSalonId);
-    if(!s) return;
-
-    if(s.status === 'suspenso'){
-      s.status = 'ativo';
-      if(daysUntil(s.expira) < 0) s.expira = addDays(30);
-      showToast(`${s.nome} foi reativado.`);
-    } else {
-      s.status = 'suspenso';
-      showToast(`${s.nome} foi suspenso.`);
-    }
-    closeModal('detailModal');
-    renderTable();
-  }
-
-  let toastTimer;
+  // Toast notification simples
   function showToast(msg){
     const toast = document.getElementById('toast');
     document.getElementById('toastMsg').textContent = msg;
     toast.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.classList.remove('show'), 3200);
+    setTimeout(() => toast.classList.remove('show'), 3200);
   }
 
-  // fecha modal clicando fora
+  // Fechar modal ao clicar fora
   document.querySelectorAll('.modal-overlay').forEach(overlay => {
     overlay.addEventListener('click', e => {
       if(e.target === overlay) overlay.classList.remove('open');
     });
   });
 
-  renderTable();
-  updateRequestsBadge();
+  // Exibir toast se houver mensagem de sucesso do Laravel
+  @if(session('success'))
+      showToast("{{ session('success') }}");
+  @endif
+
 </script>
 
 </body>

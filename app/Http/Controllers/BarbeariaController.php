@@ -14,21 +14,17 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
-
 class BarbeariaController extends Controller
 {
     public function index()
     {
-        $barbearia = Auth::user()?->barbearia;
+        $barbearia = Auth::guard('barbearia')->user();
 
         if (! $barbearia) {
-            // Se o usuário não estiver associado a nenhuma barbearia (ex: super admin)
-            $barbearias = Barbearia::with('admin')->get();
-
-            return view('barbearias.index', compact('barbearias'));
+            return redirect()->route('admins.index');
         }
 
-        $userIds = $barbearia->users()->pluck('id');
+        $userIds = User::where('barbearia_id', $barbearia->id)->pluck('id');
 
         $hoje = Carbon::today();
         $inicioSemana = Carbon::now()->startOfWeek();
@@ -47,26 +43,28 @@ class BarbeariaController extends Controller
         $faturamentoSemana = $atendimentosSemana->sum('valor');
         $faturamentoMes = $atendimentosMes->sum('valor');
 
+        $qtdAtendimentosDia = $atendimentosHoje->count();
+        $qtdAtendimentosSemana = $atendimentosSemana->count();
         $qtdAtendimentosMes = $atendimentosMes->count();
         $ticketMedioMes = $qtdAtendimentosMes > 0 ? $faturamentoMes / $qtdAtendimentosMes : 0;
 
         // Fecho de caixa (Hoje) por método
         $pagamentos = Pagamento::all();
-        $fechoCaixaHoje = [];
-        foreach ($pagamentos as $pagamento) {
-            $fechoCaixaHoje[$pagamento->name] = $atendimentosHoje->where('pagamento_id', $pagamento->id)->sum('valor');
-        }
+        $fechoCaixaHoje = $pagamentos->map(fn ($pagamento) => [
+            'metodo' => $pagamento->name,
+            'total' => $atendimentosHoje->where('pagamento_id', $pagamento->id)->sum('valor'),
+        ])->values();
 
         // Serviços mais populares no mês
         $servicosPopulares = $atendimentosMes->groupBy('service_id')->map(function ($atends) {
             $service = $atends->first()->service;
 
             return [
-                'name' => $service ? $service->name : 'Desconhecido',
-                'qtd' => $atends->count(),
+                'nome' => $service ? $service->name : 'Desconhecido',
+                'count' => $atends->count(),
                 'total' => $atends->sum('valor'),
             ];
-        })->sortByDesc('qtd')->take(5);
+        })->sortByDesc('count')->take(5)->values();
 
         // Equipa e Produtividade
         $equipa = User::where('barbearia_id', $barbearia->id)
@@ -78,31 +76,44 @@ class BarbeariaController extends Controller
             }], 'valor')
             ->get();
 
+        $produtividadeEquipa = $equipa->map(fn ($user) => [
+            'nome' => $user->name,
+            'count' => $user->atendimentos_count,
+            'total' => $user->atendimentos_sum_valor ?? 0,
+        ])->sortByDesc('total')->values();
+
         // Serviços oferecidos
         $servicos = Service::all();
 
         // Tabela de Fecho de Caixa (Atendimentos de hoje)
         $ultimosAtendimentos = $atendimentosHoje->sortByDesc('horario');
+        $todosAtendimentos = $atendimentos
+            ->where('horario', '>=', now()->subDays(45))
+            ->sortByDesc('horario')
+            ->values();
 
         return view('pages.barbeariaDashboard', compact(
             'barbearia',
             'faturamentoHoje',
             'faturamentoSemana',
             'faturamentoMes',
+            'qtdAtendimentosDia',
+            'qtdAtendimentosSemana',
             'qtdAtendimentosMes',
             'ticketMedioMes',
             'fechoCaixaHoje',
             'servicosPopulares',
+            'produtividadeEquipa',
             'equipa',
             'servicos',
-            'ultimosAtendimentos'
+            'ultimosAtendimentos',
+            'todosAtendimentos'
         ));
     }
 
     public function create()
     {
         $admins = Admin::all();
-
         return view('barbearias.create', compact('admins'));
     }
 
@@ -123,33 +134,55 @@ class BarbeariaController extends Controller
         $data['password'] = Hash::make($data['password']);
         Barbearia::create($data);
 
-        return redirect()->route('barbearias.index')->with('success', 'Barbearia criada com sucesso!');
+        return redirect()->route('admins.index')->with('success', 'Barbearia criada com sucesso!');
     }
 
     public function show(Barbearia $barbearia)
     {
+        if (Auth::guard('barbearia')->check()) {
+            abort_unless(Auth::guard('barbearia')->id() === $barbearia->id, 403);
+        }
+
         return view('barbearias.show', compact('barbearia'));
     }
 
     public function edit(Barbearia $barbearia)
     {
-        $admins = Admin::all();
+        if (Auth::guard('barbearia')->check()) {
+            abort_unless(Auth::guard('barbearia')->id() === $barbearia->id, 403);
+        }
 
+        $admins = Admin::all();
         return view('barbearias.edit', compact('barbearia', 'admins'));
     }
 
     public function update(Request $request, Barbearia $barbearia)
     {
-        $data = $request->validate([
-            'admin_id' => 'required|exists:admins,id',
-            'name' => 'required|string|max:255',
-            'municipio' => 'required|string|max:255',
-            'plano' => 'required|numeric',
-            'gestor' => 'required|string|max:255',
-            'email' => 'required|email|unique:barbearias,email,'.$barbearia->id,
-            'number' => 'required|string|max:255',
-            'isactive' => 'boolean',
-        ]);
+        $isAdmin = Auth::guard('admin')->check();
+        $isBarbearia = Auth::guard('barbearia')->check();
+
+        if ($isBarbearia) {
+            abort_unless(Auth::guard('barbearia')->id() === $barbearia->id, 403);
+        }
+
+        $rules = $isAdmin ? [
+            'admin_id' => 'sometimes|required|exists:admins,id',
+            'name' => 'sometimes|required|string|max:255',
+            'municipio' => 'sometimes|required|string|max:255',
+            'plano' => 'sometimes|required|numeric',
+            'gestor' => 'sometimes|required|string|max:255',
+            'email' => 'sometimes|required|email|unique:barbearias,email,'.$barbearia->id,
+            'number' => 'sometimes|required|string|max:255',
+            'isactive' => 'sometimes|boolean',
+        ] : [
+            'name' => 'sometimes|required|string|max:255',
+            'gestor' => 'sometimes|required|string|max:255',
+            'email' => 'sometimes|required|email|unique:barbearias,email,'.$barbearia->id,
+            'number' => 'sometimes|required|string|max:255',
+            'password' => 'sometimes|nullable|string|min:8',
+        ];
+
+        $data = $request->validate($rules);
 
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);
@@ -157,13 +190,18 @@ class BarbeariaController extends Controller
 
         $barbearia->update($data);
 
-        return redirect()->route('barbearias.index')->with('success', 'Barbearia atualizada com sucesso!');
+        if ($request->expectsJson()) {
+            return response()->json($barbearia->fresh());
+        }
+
+        return redirect()
+            ->route($isAdmin ? 'admins.index' : 'barbearias.dashboard')
+            ->with('success', 'Barbearia atualizada com sucesso!');
     }
 
     public function destroy(Barbearia $barbearia)
     {
         $barbearia->delete();
-
-        return redirect()->route('barbearias.index')->with('success', 'Barbearia removida com sucesso!');
+        return redirect()->route('admins.index')->with('success', 'Barbearia removida com sucesso!');
     }
 }
