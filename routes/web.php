@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\BarbeariaController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\UserController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -15,6 +16,17 @@ Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('l
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.store');
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
+Route::get('/dashboard', function () {
+    if (Auth::guard('admin')->check()) {
+        return redirect()->route('admins.index');
+    }
+
+    if (Auth::guard('barbearia')->check()) {
+        return redirect()->route('barbearias.dashboard');
+    }
+
+    return redirect()->route('users.index');
+})->middleware(['auth:web,admin,barbearia'])->name('dashboard');
 
 // Área do Admin
 Route::middleware(['auth:admin'])->group(function () {
