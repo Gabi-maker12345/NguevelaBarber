@@ -1,5 +1,9 @@
 <?php
 
+$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost';
+$detectedUrl = $scheme . '://' . $host;
+
 return [
 
     /*
@@ -52,15 +56,7 @@ return [
     |
     */
 
-    'url' => function () {
-        $envUrl = env('APP_URL');
-        if ($envUrl && $envUrl !== 'http://localhost') {
-            return $envUrl;
-        }
-        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-        $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost';
-        return $scheme . '://' . $host;
-    }(),
+    'url' => (env('APP_URL') && env('APP_URL') !== 'http://localhost') ? env('APP_URL') : $detectedUrl,
 
     /*
     |--------------------------------------------------------------------------
