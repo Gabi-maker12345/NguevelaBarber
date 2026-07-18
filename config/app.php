@@ -52,7 +52,15 @@ return [
     |
     */
 
-    'url' => env('APP_URL', 'http://localhost'),
+    'url' => function () {
+        $envUrl = env('APP_URL');
+        if ($envUrl && $envUrl !== 'http://localhost') {
+            return $envUrl;
+        }
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost';
+        return $scheme . '://' . $host;
+    }(),
 
     /*
     |--------------------------------------------------------------------------

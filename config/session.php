@@ -169,7 +169,7 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    'secure' => env('SESSION_SECURE_COOKIE', (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')),
 
     /*
     |--------------------------------------------------------------------------

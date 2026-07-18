@@ -37,6 +37,7 @@
     "CACHE_STORE": "array",
     "QUEUE_CONNECTION": "sync",
     "SESSION_DRIVER": "database",
+    "SESSION_SECURE_COOKIE": "true",
     "APP_CONFIG_CACHE": "/tmp/laravel/config.php",
     "APP_EVENTS_CACHE": "/tmp/laravel/events.php",
     "APP_PACKAGES_CACHE": "/tmp/laravel/packages.php",

@@ -928,10 +928,10 @@
                   </button>
                   
                   {{-- Formulário de exclusão --}}
-                  <form action="{{ route('barbearias.destroy', $barbearia->id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja remover esta barbearia?');" style="display:inline;">
+                  <form action="{{ route('barbearias.destroy', $barbearia->id) }}" method="POST" style="display:inline;">
                       @csrf
                       @method('DELETE')
-                      <button type="submit" class="icon-btn danger" title="Remover">
+                      <button type="button" class="icon-btn danger" title="Remover" onclick="confirmDeleteBarbearia(this)">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                       </button>
                   </form>
@@ -1284,6 +1284,21 @@
   </div>
 </div>
 
+<!-- ============ MODAL: CONFIRMAÇÃO ============ -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal" style="max-width:400px;">
+    <div class="confirm-icon" style="background:var(--danger-soft); color:var(--danger);">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
+    </div>
+    <div class="modal-title" id="confirmTitle">Remover item</div>
+    <div class="modal-desc" id="confirmDesc">Esta ação não pode ser desfeita.</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('confirmModal')">Cancelar</button>
+      <button class="btn btn-danger-ghost" id="confirmActionBtn">Remover</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast">
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
   <span id="toastMsg">Feito.</span>
@@ -1489,6 +1504,20 @@
       
       // Submeter formulário automaticamente para salvar a mudança de status
       document.getElementById('editSalonForm').submit();
+  }
+
+  // ============================================================
+  // CONFIRMAÇÃO DE EXCLUSÃO DE BARBEARIA
+  // ============================================================
+  function confirmDeleteBarbearia(btn){
+    const form = btn.closest('form');
+    document.getElementById('confirmTitle').textContent = 'Remover barbearia';
+    document.getElementById('confirmDesc').textContent = 'Tem certeza que deseja remover esta barbearia? Esta ação não pode ser desfeita.';
+    document.getElementById('confirmActionBtn').onclick = () => {
+      closeModal('confirmModal');
+      form.submit();
+    };
+    document.getElementById('confirmModal').classList.add('open');
   }
 
   // Toast notification simples
