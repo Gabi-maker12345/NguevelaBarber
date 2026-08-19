@@ -1,0 +1,88 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Carbon\Carbon;
+
+class Barbearia extends Authenticatable 
+{
+    use Notifiable; 
+
+    protected $fillable = [
+        'admin_id',
+        'name',
+        'municipio',
+        'plano',
+        'gestor',
+        'email',
+        'number', 
+        'password',
+        'password_plain',
+        'isactive',
+    ];
+
+    protected $appends = [
+        'next_billing_date',
+        'expiration_date',
+        'days_until_expiration',
+        'subscricao_expira_em',
+    ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'password' => 'hashed',
+            'isactive' => 'boolean',
+        ];
+    }
+
+    public function admin()
+    {
+        return $this->belongsTo(Admin::class);
+    }
+
+    public function users()
+    {
+        return $this->hasMany(User::class);
+    }
+
+    public function getNextBillingDateAttribute()
+    {
+        if (! $this->created_at) {
+            return now()->addDays(30);
+        }
+
+        $daysSinceCreation = $this->created_at->diffInDays(now());
+        $cycles = floor($daysSinceCreation / 30);
+
+        return $this->created_at->copy()->addDays(($cycles + 1) * 30);
+    }
+
+    public function getExpirationDateAttribute()
+    {
+        return $this->next_billing_date;
+    }
+
+    public function getDaysUntilExpirationAttribute()
+    {
+        return (int) now()->startOfDay()->diffInDays($this->next_billing_date->startOfDay(), false);
+    }
+
+    public function getSubscricaoExpiraEmAttribute()
+    {
+        return $this->expiration_date;
+    }
+
+    public function diasRestantes(): int
+    {
+        return $this->days_until_expiration;
+    }
+}
