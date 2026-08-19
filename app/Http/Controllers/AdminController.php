@@ -36,8 +36,24 @@ class AdminController extends Controller
                    && $barbearia->days_until_expiration >= 0;
         })->count();
 
+        $barbeariasPayload = $barbearias->map(function ($b) {
+            return [
+                'id' => $b->id,
+                'name' => $b->name,
+                'municipio' => $b->municipio,
+                'plano' => $b->plano,
+                'gestor' => $b->gestor,
+                'email' => $b->email,
+                'number' => $b->number,
+                'isactive' => (bool) $b->isactive,
+                'users_count' => $b->users_count,
+                'password_plain' => $b->password_plain,
+            ];
+        })->values();
+
         return view('pages.adminDashboard', compact(
             'barbearias',
+            'barbeariasPayload',
             'totalSaloes',
             'saloesAtivos',
             'receitaMensal',

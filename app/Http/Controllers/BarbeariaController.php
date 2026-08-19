@@ -11,7 +11,6 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class BarbeariaController extends Controller
@@ -82,8 +81,10 @@ class BarbeariaController extends Controller
             'total' => $user->atendimentos_sum_valor ?? 0,
         ])->sortByDesc('total')->values();
 
-        // Serviços oferecidos
-        $servicos = Service::all();
+        // Serviços oferecidos (próprios da barbearia ou globais)
+        $servicos = Service::where('barbearia_id', $barbearia->id)
+            ->orWhereNull('barbearia_id')
+            ->get();
 
         // Tabela de Fecho de Caixa (Atendimentos de hoje)
         $ultimosAtendimentos = $atendimentosHoje->sortByDesc('horario');
@@ -129,18 +130,42 @@ class BarbeariaController extends Controller
             'number' => 'required|string|max:255',
             'password' => 'required|string|min:8',
             'isactive' => 'boolean',
+            'funcionarios' => 'nullable|array',
+            'funcionarios.*.name' => 'sometimes|required|string|max:255',
+            'funcionarios.*.email' => 'sometimes|required|email|unique:users,email',
+            'funcionarios.*.password' => 'sometimes|required|string|min:8',
         ]);
 
+        $plainPassword = $data['password'];
         $data['password'] = Hash::make($data['password']);
-        Barbearia::create($data);
+        $data['password_plain'] = $plainPassword;
+        $barbearia = Barbearia::create($data);
+
+        if ($request->filled('funcionarios') && is_array($request->funcionarios)) {
+            foreach ($request->funcionarios as $func) {
+                if (!empty($func['name']) && !empty($func['email']) && !empty($func['password'])) {
+                    User::create([
+                        'barbearia_id' => $barbearia->id,
+                        'name' => $func['name'],
+                        'email' => $func['email'],
+                        'password' => Hash::make($func['password']),
+                        'isactive' => true,
+                    ]);
+                }
+            }
+        }
 
         return redirect()->route('admins.index')->with('success', 'Barbearia criada com sucesso!');
     }
 
-    public function show(Barbearia $barbearia)
+    public function show(Request $request, Barbearia $barbearia)
     {
         if (Auth::guard('barbearia')->check()) {
             abort_unless(Auth::guard('barbearia')->id() === $barbearia->id, 403);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json($barbearia);
         }
 
         return view('barbearias.show', compact('barbearia'));
@@ -174,17 +199,19 @@ class BarbeariaController extends Controller
             'email' => 'sometimes|required|email|unique:barbearias,email,'.$barbearia->id,
             'number' => 'sometimes|required|string|max:255',
             'isactive' => 'sometimes|boolean',
+            'password' => 'sometimes|nullable|string|min:8',
         ] : [
             'name' => 'sometimes|required|string|max:255',
             'gestor' => 'sometimes|required|string|max:255',
             'email' => 'sometimes|required|email|unique:barbearias,email,'.$barbearia->id,
             'number' => 'sometimes|required|string|max:255',
-            'password' => 'sometimes|nullable|string|min:8',
         ];
 
         $data = $request->validate($rules);
+        unset($data['email']); // Email is fixed and cannot be modified via update
 
-        if ($request->filled('password')) {
+        if ($isAdmin && $request->filled('password')) {
+            $data['password_plain'] = $request->password;
             $data['password'] = Hash::make($request->password);
         }
 

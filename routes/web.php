@@ -42,19 +42,28 @@ Route::match(['put', 'patch'], '/barbearias/{barbearia}', [BarbeariaController::
     ->name('barbearias.update');
 
 Route::post('/users/{user}/atendimentos', [UserController::class, 'storeAtendimento'])
-    ->middleware(['auth:web,barbearia'])
+    ->middleware(['auth:web,barbearia,admin'])
     ->name('users.atendimentos.store');
 
-// Área da Barbearia
-Route::middleware(['auth:barbearia'])->group(function () {
-    Route::get('/barbearia/dashboard', [BarbeariaController::class, 'index'])->name('barbearias.dashboard');
+Route::delete('/users/{user}/atendimentos/{atendimento}', [UserController::class, 'destroyAtendimento'])
+    ->middleware(['auth:web,barbearia,admin'])
+    ->name('users.atendimentos.destroy');
 
+// Gestão de utilizadores por barbearia (admin e gestor do salão)
+Route::middleware(['auth:admin,barbearia'])->group(function () {
+    Route::get('/barbearias/{barbearia}/users', [UserController::class, 'indexForBarbearia'])
+        ->name('barbearias.users.index');
     Route::post('/barbearias/{barbearia}/users', [UserController::class, 'storeForBarbearia'])
         ->name('barbearias.users.store');
     Route::put('/barbearias/{barbearia}/users/{user}', [UserController::class, 'updateForBarbearia'])
         ->name('barbearias.users.update');
     Route::delete('/barbearias/{barbearia}/users/{user}', [UserController::class, 'destroyForBarbearia'])
         ->name('barbearias.users.destroy');
+});
+
+// Área da Barbearia
+Route::middleware(['auth:barbearia'])->group(function () {
+    Route::get('/barbearia/dashboard', [BarbeariaController::class, 'index'])->name('barbearias.dashboard');
 
     Route::resource('services', ServiceController::class);
 });

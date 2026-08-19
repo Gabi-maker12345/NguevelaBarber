@@ -19,6 +19,7 @@ class Barbearia extends Authenticatable
         'email',
         'number', 
         'password',
+        'password_plain',
         'isactive',
     ];
 
@@ -26,6 +27,7 @@ class Barbearia extends Authenticatable
         'next_billing_date',
         'expiration_date',
         'days_until_expiration',
+        'subscricao_expira_em',
     ];
 
     protected $hidden = [
@@ -70,6 +72,16 @@ class Barbearia extends Authenticatable
 
     public function getDaysUntilExpirationAttribute()
     {
-        return now()->startOfDay()->diffInDays($this->next_billing_date->startOfDay(), false);
+        return (int) now()->startOfDay()->diffInDays($this->next_billing_date->startOfDay(), false);
+    }
+
+    public function getSubscricaoExpiraEmAttribute()
+    {
+        return $this->expiration_date;
+    }
+
+    public function diasRestantes(): int
+    {
+        return $this->days_until_expiration;
     }
 }

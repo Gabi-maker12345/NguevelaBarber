@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Atendimento;
 use App\Models\Barbearia;
+use App\Models\Service;
+use App\Models\Pagamento;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -19,7 +22,7 @@ class UserController extends Controller
             return redirect()->route('login')->with('error', 'Por favor, faça login para acessar o painel.');
         }
 
-        $hoje = \Carbon\Carbon::today();
+        $hoje = Carbon::today();
 
         // Atendimentos de hoje deste barbeiro
         $atendimentosHoje = Atendimento::with(['service', 'pagamento'])
@@ -33,8 +36,8 @@ class UserController extends Controller
         $ticketMedioHoje = $qtdAtendimentosHoje > 0 ? $faturadoHoje / $qtdAtendimentosHoje : 0;
 
         // Dados para o modal de novo atendimento (3 toques)
-        $servicos = \App\Models\Service::all();
-        $pagamentos = \App\Models\Pagamento::all();
+        $servicos = Service::all();
+        $pagamentos = Pagamento::all();
 
         return view('pages.userDashboard', compact(
             'user',
@@ -109,6 +112,17 @@ class UserController extends Controller
         abort(403);
     }
 
+    public function indexForBarbearia(Barbearia $barbearia)
+    {
+        $this->authorizeBarbearia($barbearia);
+
+        $users = User::where('barbearia_id', $barbearia->id)
+            ->withCount('atendimentos')
+            ->get();
+
+        return response()->json($users);
+    }
+
     public function storeForBarbearia(Request $request, Barbearia $barbearia)
     {
         $this->authorizeBarbearia($barbearia);
@@ -142,6 +156,8 @@ class UserController extends Controller
             'password' => 'sometimes|nullable|string|min:8',
             'isactive' => 'sometimes|boolean',
         ]);
+
+        unset($data['email']); // Email is pre-defined and cannot be updated
 
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);
@@ -178,6 +194,8 @@ class UserController extends Controller
             abort_unless(Auth::guard('web')->id() === $user->id, 403);
         } elseif (Auth::guard('barbearia')->check()) {
             abort_unless(Auth::guard('barbearia')->id() === $user->barbearia_id, 403);
+        } elseif (Auth::guard('admin')->check()) {
+            // Admin allowed
         } else {
             abort(403);
         }
@@ -190,7 +208,7 @@ class UserController extends Controller
 
         $data['user_id'] = $user->id;
         $data['horario'] = $request->input('horario', now());
-        
+
         $atendimento = Atendimento::create($data);
 
         if ($request->expectsJson()) {
@@ -207,6 +225,29 @@ class UserController extends Controller
         return redirect()->back()->with('success', 'Atendimento registrado com sucesso!');
     }
 
+    public function destroyAtendimento(Request $request, User $user, Atendimento $atendimento)
+    {
+        if (Auth::guard('web')->check()) {
+            abort_unless(Auth::guard('web')->id() === $user->id, 403);
+        } elseif (Auth::guard('barbearia')->check()) {
+            abort_unless(Auth::guard('barbearia')->id() === $user->barbearia_id, 403);
+        } elseif (Auth::guard('admin')->check()) {
+            // Admin allowed
+        } else {
+            abort(403);
+        }
+
+        abort_unless($atendimento->user_id === $user->id, 404);
+
+        $atendimento->delete();
+
+        if ($request->expectsJson()) {
+            return response()->noContent();
+        }
+
+        return redirect()->back()->with('success', 'Atendimento removido com sucesso!');
+    }
+
     private function authorizeWebUser(User $user): void
     {
         abort_unless(Auth::guard('web')->id() === $user->id, 403);
@@ -214,6 +255,9 @@ class UserController extends Controller
 
     private function authorizeBarbearia(Barbearia $barbearia): void
     {
+        if (Auth::guard('admin')->check()) {
+            return;
+        }
         abort_unless(Auth::guard('barbearia')->id() === $barbearia->id, 403);
     }
 

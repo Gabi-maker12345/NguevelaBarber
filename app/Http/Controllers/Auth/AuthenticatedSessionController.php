@@ -30,16 +30,31 @@ class AuthenticatedSessionController extends Controller
         ]);
 
         if (Auth::guard('admin')->attempt($credentials, $request->boolean('remember'))) {
+            $user = Auth::guard('admin')->user();
+            if (isset($user->isactive) && ! $user->isactive) {
+                Auth::guard('admin')->logout();
+                return back()->withErrors(['email' => 'Esta conta de administrador está suspensa ou desativada.'])->onlyInput('email');
+            }
             $request->session()->regenerate();
             return redirect()->intended(route('admins.index'));
         }
 
         if (Auth::guard('barbearia')->attempt($credentials, $request->boolean('remember'))) {
+            $user = Auth::guard('barbearia')->user();
+            if (isset($user->isactive) && ! $user->isactive) {
+                Auth::guard('barbearia')->logout();
+                return back()->withErrors(['email' => 'Esta conta de barbearia está suspensa ou desativada.'])->onlyInput('email');
+            }
             $request->session()->regenerate();
             return redirect()->intended(route('barbearias.dashboard'));
         }
 
         if (Auth::guard('web')->attempt($credentials, $request->boolean('remember'))) {
+            $user = Auth::guard('web')->user();
+            if (isset($user->isactive) && ! $user->isactive) {
+                Auth::guard('web')->logout();
+                return back()->withErrors(['email' => 'Sua conta de usuário está suspensa ou desativada.'])->onlyInput('email');
+            }
             $request->session()->regenerate();
             return redirect()->intended(route('users.index'));
         }

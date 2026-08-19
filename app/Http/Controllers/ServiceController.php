@@ -5,11 +5,21 @@ namespace App\Http\Controllers;
 use App\Models\Service;
 use Illuminate\Http\Request;
 
+use Illuminate\Support\Facades\Auth;
+
 class ServiceController extends Controller
 {
     public function index()
     {
-        $services = Service::all();
+        $query = Service::query();
+        if (Auth::guard('barbearia')->check()) {
+            $barbeariaId = Auth::guard('barbearia')->id();
+            $query->where(function ($q) use ($barbeariaId) {
+                $q->where('barbearia_id', $barbeariaId)
+                  ->orWhereNull('barbearia_id');
+            });
+        }
+        $services = $query->get();
 
         return view('services.index', compact('services'));
     }
@@ -24,7 +34,12 @@ class ServiceController extends Controller
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'price' => 'required|numeric',
+            'barbearia_id' => 'nullable|exists:barbearias,id',
         ]);
+
+        if (empty($data['barbearia_id']) && Auth::guard('barbearia')->check()) {
+            $data['barbearia_id'] = Auth::guard('barbearia')->id();
+        }
 
         $service = Service::create($data);
 
@@ -50,6 +65,7 @@ class ServiceController extends Controller
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'price' => 'required|numeric',
+            'barbearia_id' => 'nullable|exists:barbearias,id',
         ]);
 
         $service->update($data);

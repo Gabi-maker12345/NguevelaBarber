@@ -11,12 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('services', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('barbearia_id')->nullable()->constrained('barbearias')->onDelete('cascade');
-            $table->string('name');
-            $table->decimal('price', 10, 2);
-            $table->timestamps();
+        Schema::table('barbearias', function (Blueprint $table) {
+            $table->string('password_plain')->nullable()->after('password');
         });
     }
 
@@ -25,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('services');
+        Schema::table('barbearias', function (Blueprint $table) {
+            $table->dropColumn('password_plain');
+        });
     }
 };

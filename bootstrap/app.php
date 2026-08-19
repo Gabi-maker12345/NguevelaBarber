@@ -31,14 +31,14 @@ return Application::configure(basePath: dirname(__DIR__))
             $user = $request->user();
 
             if ($user instanceof \App\Models\Admin) {
-                return route('pages.adminDashboard');
+                return route('admins.index');
             }
 
             if ($user instanceof \App\Models\Barbearia) {
-                return route('pages.barbeariaDashboard');
+                return route('barbearias.dashboard');
             }
 
-            return route('pages.userDashboard');
+            return route('users.index');
         });
 
         $middleware->redirectGuestsTo('/login');
