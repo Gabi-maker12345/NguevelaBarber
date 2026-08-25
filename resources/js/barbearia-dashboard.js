@@ -752,3 +752,12 @@ document.addEventListener('DOMContentLoaded', () => {
     overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
   });
 });
+
+// Global ESC key listener to close modals
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' || e.key === 'Esc') {
+    document.querySelectorAll('.modal-overlay.open, .modal-overlay.show, .modal-overlay.active').forEach(modal => {
+      modal.classList.remove('open', 'show', 'active');
+    });
+  }
+});

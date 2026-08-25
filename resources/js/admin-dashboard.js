@@ -589,3 +589,67 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+// Global ESC key listener to close modals
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' || e.key === 'Esc') {
+    document.querySelectorAll('.modal-overlay.open, .modal-overlay.show, .modal-overlay.active').forEach(modal => {
+      modal.classList.remove('open', 'show', 'active');
+    });
+  }
+});
+
+window.saveAdminSettings = function saveAdminSettings() {
+  const nome = document.getElementById('am-nome')?.value.trim();
+  const email = document.getElementById('am-email')?.value.trim();
+  const password = document.getElementById('am-password')?.value.trim();
+
+  if (!nome) {
+    window.showToast('Por favor, introduz o teu nome.');
+    return;
+  }
+  if (!email || !window.isValidEmail(email)) {
+    window.showToast('Por favor, introduz um email válido.');
+    return;
+  }
+  if (password && password.length < 8) {
+    window.showToast('A palavra-passe deve ter no mínimo 8 caracteres.');
+    return;
+  }
+
+  const adminId = window.ADMIN_DATA?.adminId;
+  if (!adminId) {
+    window.showToast('ID de administrador não encontrado.');
+    return;
+  }
+
+  const payload = { name: nome, email: email };
+  if (password) payload.password = password;
+
+  fetch(`/admins/${adminId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-TOKEN': getCsrfToken(),
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  })
+  .then(async r => {
+    const resData = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      throw new Error(resData.message || 'Erro ao guardar configurações.');
+    }
+    return resData;
+  })
+  .then(() => {
+    document.querySelectorAll('.admin-name').forEach(el => el.textContent = nome);
+    document.querySelectorAll('.admin-email').forEach(el => el.textContent = email);
+    const passInput = document.getElementById('am-password');
+    if (passInput) passInput.value = '';
+    window.showToast('Configurações guardadas com sucesso!');
+  })
+  .catch(err => {
+    window.showToast(err.message || 'Erro ao guardar configurações.');
+  });
+};
