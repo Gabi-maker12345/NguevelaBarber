@@ -14,6 +14,7 @@ export default defineConfig({
                 'resources/js/admin-dashboard.js',
                 'resources/js/barbearia-dashboard.js',
                 'resources/js/user-dashboard.js',
+                'resources/js/nguevela-guard.js',
             ],
             refresh: true,
         }),

@@ -110,6 +110,10 @@ class AdminController extends Controller
 
         $admin->update($data);
 
+        if ($request->expectsJson()) {
+            return response()->json($admin->fresh());
+        }
+
         return redirect()->route('admins.index')->with('success', 'Admin atualizado com sucesso!');
     }
 
