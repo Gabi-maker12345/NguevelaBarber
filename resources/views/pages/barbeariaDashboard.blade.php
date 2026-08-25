@@ -366,7 +366,7 @@
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
               <input id="equipaSearch" type="text" placeholder="Procurar funcionário..." oninput="renderEquipa()">
             </div>
-            <button class="btn btn-primary desktop-only" onclick="openFuncionarioModal()">
+            <button class="btn btn-primary" onclick="openFuncionarioModal()">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
               Novo funcionário
             </button>
@@ -403,7 +403,7 @@
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
               <input id="catalogoSearch" type="text" placeholder="Procurar serviço..." oninput="renderCatalogo()">
             </div>
-            <button class="btn btn-primary desktop-only" onclick="openServicoModal()">
+            <button class="btn btn-primary" onclick="openServicoModal()">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
               Novo serviço
             </button>
