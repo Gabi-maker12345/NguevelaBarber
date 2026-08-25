@@ -210,6 +210,9 @@ class BarbeariaController extends Controller
         if ($isAdmin && $request->filled('password')) {
             $data['password_plain'] = $request->password;
             $data['password'] = Hash::make($request->password);
+        } else {
+            unset($data['password']);
+            unset($data['password_plain']);
         }
 
         $barbearia->update($data);
